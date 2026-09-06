@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食源性疾病暴发事件处置 - 闯关演练</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #eef2f7;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a5276, #2980b9);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .header h1 { font-size: 24px; margin-bottom: 8px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        .progress-bar-container {
+            background: #ddd;
+            border-radius: 20px;
+            height: 12px;
+            margin: 15px 0 5px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: rgba(255,255,255,0.9);
+        }
+        .level-section {
+            display: none;
+        }
+        .level-section.active {
+            display: block;
+        }
+        .level-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1a5276;
+            margin: 20px 0 15px;
+            padding-left: 12px;
+            border-left: 4px solid #2980b9;
+        }
+        .scenario-box {
+            background: #fef9e7;
+            border-left: 4px solid #f39c12;
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .question-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .question-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .question-title .score {
+            display: inline-block;
+            background: #ebf5fb;
+            color: #2980b9;
+            font-size: 12px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+        .option {
+            display: block;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .option:hover {
+            border-color: #2980b9;
+            background: #ebf5fb;
+        }
+        .option.selected {
+            border-color: #2980b9;
+            background: #d4e6f1;
+        }
+        .option.correct {
+            border-color: #27ae60;
+            background: #d5f5e3;
+        }
+        .option.wrong {
+            border-color: #e74c3c;
+            background: #fadbd8;
+        }
+        .option input[type="checkbox"],
+        .option input[type="radio"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        .sort-container { margin: 10px 0; }
+        .sort-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .sort-item select {
+            margin-right: 12px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            min-width: 60px;
+        }
+        .match-container { margin: 10px 0; }
+        .match-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .match-item select {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            min-width: 80px;
+        }
+        .match-options-box {
+            background: #fef9e7;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 13px;
+            line-height: 2;
+        }
+        .fill-group { margin: 12px 0; }
+        .fill-label {
+            font-size: 13px;
+            color: #2980b9;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .fill-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .fill-input:focus {
+            outline: none;
+            border-color: #2980b9;
+        }
+        textarea.fill-input {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 35px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(41,128,185,0.4); }
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+        .btn-success:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(39,174,96,0.4); }
+        .btn-center {
+            text-align: center;
+            margin: 25px 0;
+        }
+        .feedback {
+            display: none;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .feedback.show { display: block; }
+        .feedback.correct-fb {
+            background: #d5f5e3;
+            border: 1px solid #27ae60;
+            color: #1e8449;
+        }
+        .feedback.wrong-fb {
+            background: #fadbd8;
+            border: 1px solid #e74c3c;
+            color: #c0392b;
+        }
+        .feedback.partial-fb {
+            background: #fef9e7;
+            border: 1px solid #f39c12;
+            color: #b7950b;
+        }
+        .score-display {
+            font-size: 14px;
+            color: #666;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+        .final-result {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        .final-result h2 {
+            font-size: 28px;
+            color: #1a5276;
+            margin-bottom: 15px;
+        }
+        .final-score {
+            font-size: 60px;
+            font-weight: bold;
+            color: #2980b9;
+            margin: 20px 0;
+        }
+        .final-grade {
+            font-size: 20px;
+            padding: 8px 25px;
+            border-radius: 25px;
+            display: inline-block;
+            margin: 10px 0 20px;
+            font-weight: bold;
+        }
+        .grade-excellent { background: #d5f5e3; color: #27ae60; }
+        .grade-good { background: #d4e6f1; color: #2980b9; }
+        .grade-pass { background: #fef9e7; color: #f39c12; }
+        .grade-fail { background: #fadbd8; color: #e74c3c; }
+        .level-score-summary {
+            text-align: left;
+            max-width: 500px;
+            margin: 20px auto;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .level-score-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 14px;
+        }
+        .level-score-row:last-child { border-bottom: none; }
+        .disabled { opacity: 0.6; pointer-events: none; }
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .header { padding: 20px; }
+            .header h1 { font-size: 20px; }
+            .question-card { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 食源性疾病暴发事件处置 - 闯关演练</h1>
+            <p>某市某中学食源性疾病暴发事件应急处置模拟演练</p>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text">
+                <span id="levelText">第 1 / 6 关</span>
+                <span id="totalScore">当前总分：0</span>
+            </div>
+        </div>
+
+        <!-- ==================== 第一关 ==================== -->
+        <div class="level-section active" id="level1">
+            <div class="level-title">第一关：应急响应与信息收集</div>
+            <div class="scenario-box">
+                2026年9月5日上午10:30，某市某中学多名学生出现发热、腹痛、腹泻、呕吐等症状。学校医务室接诊后发现情况异常，立即向区疾控中心报告。初步统计28人发病，均在学校食堂就餐。你们作为区疾控应急小分队，需要快速响应并妥善处置。
+            </div>
+
+            <!-- Q1 多选 -->
+            <div class="question-card" id="q1_1">
+                <div class="question-title">作为应急小分队，出发前需要准备哪些物资？（多选）<span class="score">10分</span></div>
+                <label class="option"><input type="checkbox" name="q1_1" value="A"> A. 采样耗材（咽拭子、采样管、保存液等）</label>
+                <label class="option"><input type="checkbox" name="q1_1" value="B"> B. 个人防护装备（口罩、手套、防护服等）</label>
+                <label class="option"><input type="checkbox" name="q1_1" value="C"> C. 调查表格和记录工具</label>
+                <label class="option"><input type="checkbox" name="q1_1" value="D"> D. 样本保存箱和冷链设备</label>
+                <label class="option"><input type="checkbox" name="q1_1" value="E"> E. 消毒用品</label>
+                <label class="option"><input type="checkbox" name="q1_1" value="F"> F. 宣传手册</label>
+                <div class="feedback" id="fb_q1_1"></div>
+            </div>
+
+            <!-- Q2 排序 -->
+            <div class="question-card" id="q1_2">
+                <div class="question-title">现场调查需要重点了解哪些信息？请按优先级排序。<span class="score">10分</span></div>
+                <div class="sort-container">
+                    <div class="sort-item"><select id="sort1_1"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>患者基本信息（年龄、性别、班级）</div>
+                    <div class="sort-item"><select id="sort1_2"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>发病时间和症状特征</div>
+                    <div class="sort-item"><select id="sort1_3"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>共同暴露史（饮食史）</div>
+                    <div class="sort-item"><select id="sort1_4"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>学校食堂卫生状况</div>
+                    <div class="sort-item"><select id="sort1_5"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>类似病例搜索</div>
+                    <div class="sort-item"><select id="sort1_6"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>学校总人数和就餐人数</div>
+                </div>
+                <div class="feedback" id="fb_q1_2"></div>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn btn-primary" onclick="submitLevel(1)">提交本关答案</button>
+            </div>
+        </div>
+
+        <!-- ==================== 第二关 ==================== -->
+        <div class="level-section" id="level2">
+            <div class="level-title">第二关：病例定义与病例搜索</div>
+            <div class="scenario-box">
+                到达现场后发现，患者均为9月4日晚在学校食堂就餐的学生。症状9月5日凌晨4:00开始出现，主要为腹泻（水样便）、腹痛、恶心、呕吐，部分伴发热，潜伏期约6-12小时。
+            </div>
+
+            <!-- Q1 填空 -->
+            <div class="question-card" id="q2_1">
+                <div class="question-title">请为本次疫情制定疑似病例定义（填写要点，关键词匹配即可）。<span class="score">12分</span></div>
+                <div class="fill-group">
+                    <div class="fill-label">时间范围</div>
+                    <input type="text" class="fill-input" id="fill2_time" placeholder="填写要点">
+                </div>
+                <div class="fill-group">
+                    <div class="fill-label">地点/人群</div>
+                    <input type="text" class="fill-input" id="fill2_place" placeholder="填写要点">
+                </div>
+                <div class="fill-group">
+                    <div class="fill-label">临床表现</div>
+                    <input type="text" class="fill-input" id="fill2_symptom" placeholder="填写要点">
+                </div>
+                <div class="fill-group">
+                    <div class="fill-label">流行病学史</div>
+                    <input type="text" class="fill-input" id="fill2_epi" placeholder="填写要点">
+                </div>
+                <div class="feedback" id="fb_q2_1"></div>
+            </div>
+
+            <!-- Q2 多选 -->
+            <div class="question-card" id="q2_2">
+                <div class="question-title">病例搜索应采取哪些方法？（多选）<span class="score">8分</span></div>
+                <label class="option"><input type="checkbox" name="q2_2" value="A"> A. 查阅学校医务室就诊记录</label>
+                <label class="option"><input type="checkbox" name="q2_2" value="B"> B. 到各班级进行主动搜索</label>
+                <label class="option"><input type="checkbox" name="q2_2" value="C"> C. 设立咨询点，鼓励主动报告</label>
+                <label class="option"><input type="checkbox" name="q2_2" value="D"> D. 调查食堂工作人员健康状况</label>
+                <label class="option"><input type="checkbox" name="q2_2" value="E"> E. 询问校医和班主任</label>
+                <div class="feedback" id="fb_q2_2"></div>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn btn-primary" onclick="submitLevel(2)">提交本关答案</button>
+            </div>
+        </div>
+
+        <!-- ==================== 第三关 ==================== -->
+        <div class="level-section" id="level3">
+            <div class="level-title">第三关：现场防护与样本采集</div>
+            <div class="scenario-box">
+                经过病例搜索，共发现63例符合病例定义的患者。现需进入食堂进行现场调查，并对患者、食品、环境进行采样。
+            </div>
+
+            <!-- Q1 匹配 - 防护等级 -->
+            <div class="question-card" id="q3_1">
+                <div class="question-title">为下列场景选择合适的防护等级。<span class="score">10分</span></div>
+                <div class="match-container">
+                    <div class="match-item">
+                        <span>A. 进入食堂厨房进行卫生学调查</span>
+                        <select id="match3_A"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+                    </div>
+                    <div class="match-item">
+                        <span>B. 对患者进行面对面流行病学调查</span>
+                        <select id="match3_B"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+                    </div>
+                    <div class="match-item">
+                        <span>C. 采集患者粪便样本</span>
+                        <select id="match3_C"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+                    </div>
+                    <div class="match-item">
+                        <span>D. 采集食物和环境样本</span>
+                        <select id="match3_D"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+                    </div>
+                </div>
+                <div class="match-options-box">
+                    1. 基础防护（普通工作服+口罩+手套）<br>
+                    2. 一级防护（工作服+外科口罩+隔离衣+手套+鞋套）<br>
+                    3. 二级防护（防护服+医用防护口罩+护目镜+双层手套）<br>
+                    4. 三级防护（全面型呼吸防护器+防护服）
+                </div>
+                <div class="feedback" id="fb_q3_1"></div>
+            </div>
+
+            <!-- Q2 匹配 - 采样方法 -->
+            <div class="question-card" id="q3_2">
+                <div class="question-title">将采集对象与正确的采样方法配对。<span class="score">10分</span></div>
+                <div class="match-container">
+                    <div class="match-item">
+                        <span>1. 患者粪便样本</span>
+                        <select id="sample_1"><option value="">--</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+                    </div>
+                    <div class="match-item">
+                        <span>2. 剩余可疑食物</span>
+                        <select id="sample_2"><option value="">--</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+                    </div>
+                    <div class="match-item">
+                        <span>3. 食堂工作人员咽拭子</span>
+                        <select id="sample_3"><option value="">--</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+                    </div>
+                    <div class="match-item">
+                        <span>4. 食堂物体表面</span>
+                        <select id="sample_4"><option value="">--</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+                    </div>
+                </div>
+                <div class="match-options-box">
+                    A. 挑取黏液或脓血部分，液状粪便取1-3ml（或肛拭法）<br>
+                    B. 用无菌镊子选取约20g盛装至无菌容器密封<br>
+                    C. 无菌棉签蘸湿培养液在目标位置来回涂抹<br>
+                    D. 在两侧扁桃体和咽后壁擦拭至少3次
+                </div>
+                <div class="feedback" id="fb_q3_2"></div>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn btn-primary" onclick="submitLevel(3)">提交本关答案</button>
+            </div>
+        </div>
+
+        <!-- ==================== 第四关 ==================== -->
+        <div class="level-section" id="level4">
+            <div class="level-title">第四关：描述性分析与假设建立</div>
+            <div class="scenario-box">
+                共确认病例69例。时间分布：5日4-6时15例、6-8时32例、8-10时18例、10-12时4例（呈单峰）。人群分布：高一罹患率19%、高二13.9%、高三4%，食堂工作人员0例。均为住宿生且9月4日晚在食堂就餐，走读生无发病。
+            </div>
+
+            <!-- Q1 单选 -->
+            <div class="question-card" id="q4_1">
+                <div class="question-title">根据流行曲线（短时间集中发病、单峰分布），本次暴发最可能是？<span class="score">10分</span></div>
+                <label class="option"><input type="radio" name="q4_1" value="A"> A. 持续性共同源暴发</label>
+                <label class="option"><input type="radio" name="q4_1" value="B"> B. 点源暴发（一次性共同暴露）</label>
+                <label class="option"><input type="radio" name="q4_1" value="C"> C. 人传人传播</label>
+                <label class="option"><input type="radio" name="q4_1" value="D"> D. 混合型暴发</label>
+                <div class="feedback" id="fb_q4_1"></div>
+            </div>
+
+            <!-- Q2 多选 -->
+            <div class="question-card" id="q4_2">
+                <div class="question-title">根据描述性分析，以下哪些是重要的流行病学特征？（多选）<span class="score">10分</span></div>
+                <label class="option"><input type="checkbox" name="q4_2" value="A"> A. 发病集中在6-12小时潜伏期内</label>
+                <label class="option"><input type="checkbox" name="q4_2" value="B"> B. 仅住宿生发病，走读生未发病</label>
+                <label class="option"><input type="checkbox" name="q4_2" value="C"> C. 高一罹患率最高</label>
+                <label class="option"><input type="checkbox" name="q4_2" value="D"> D. 食堂工作人员无发病</label>
+                <label class="option"><input type="checkbox" name="q4_2" value="E"> E. 所有患者均在食堂就餐</label>
+                <div class="feedback" id="fb_q4_2"></div>
+            </div>
+
+            <!-- Q3 填空 -->
+            <div class="question-card" id="q4_3">
+                <div class="question-title">根据以上分析，请提出你的初步假设。<span class="score">10分</span></div>
+                <div class="fill-group">
+                    <div class="fill-label">可能的传播途径</div>
+                    <input type="text" class="fill-input" id="fill4_route" placeholder="填写要点">
+                </div>
+                <div class="fill-group">
+                    <div class="fill-label">可能的污染来源</div>
+                    <input type="text" class="fill-input" id="fill4_source" placeholder="填写要点">
+                </div>
+                <div class="fill-group">
+                    <div class="fill-label">可能的致病因子</div>
+                    <input type="text" class="fill-input" id="fill4_pathogen" placeholder="填写要点">
+                </div>
+                <div class="feedback" id="fb_q4_3"></div>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn btn-primary" onclick="submitLevel(4)">提交本关答案</button>
+            </div>
+        </div>
+
+        <!-- ==================== 第五关 ==================== -->
+        <div class="level-section" id="level5">
+            <div class="level-title">第五关：分析性研究与验证假设</div>
+            <div class="scenario-box">
+                通过对9月4日晚餐菜品的回顾性队列研究，得到以下数据：<br>
+                • 凉拌鸡丝：食用者罹患率42.3%，未食用者罹患率5.1%，RR=8.3（95%CI: 4.2-16.4）<br>
+                • 红烧排骨：食用者罹患率15.2%，未食用者罹患率14.8%，RR=1.03（95%CI: 0.6-1.8）<br>
+                • 炒时蔬：食用者罹患率13.5%，未食用者罹患率16.1%，RR=0.84（95%CI: 0.5-1.5）<br>
+                • 米饭：食用者罹患率15.0%，未食用者罹患率14.5%，RR=1.03（95%CI: 0.4-2.6）
+            </div>
+
+            <!-- Q1 单选 -->
+            <div class="question-card" id="q5_1">
+                <div class="question-title">根据以上数据，最可能的危险食品是？<span class="score">10分</span></div>
+                <label class="option"><input type="radio" name="q5_1" value="A"> A. 红烧排骨</label>
+                <label class="option"><input type="radio" name="q5_1" value="B"> B. 凉拌鸡丝</label>
+                <label class="option"><input type="radio" name="q5_1" value="C"> C. 炒时蔬</label>
+                <label class="option"><input type="radio" name="q5_1" value="D"> D. 米饭</label>
+                <div class="feedback" id="fb_q5_1"></div>
+            </div>
+
+            <!-- Q2 多选 -->
+            <div class="question-card" id="q5_2">
+                <div class="question-title">判断凉拌鸡丝为危险食品的依据有哪些？（多选）<span class="score">10分</span></div>
+                <label class="option"><input type="checkbox" name="q5_2" value="A"> A. 食用者罹患率明显高于未食用者</label>
+                <label class="option"><input type="checkbox" name="q5_2" value="B"> B. RR值为8.3，远大于1</label>
+                <label class="option"><input type="checkbox" name="q5_2" value="C"> C. 95%置信区间不包含1，有统计学意义</label>
+                <label class="option"><input type="checkbox" name="q5_2" value="D"> D. 其他食品的RR值接近1，无统计学意义</label>
+                <label class="option"><input type="checkbox" name="q5_2" value="E"> E. 凉拌菜不经加热，更容易被污染</label>
+                <div class="feedback" id="fb_q5_2"></div>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn btn-primary" onclick="submitLevel(5)">提交本关答案</button>
+            </div>
+        </div>
+
+        <!-- ==================== 第六关 ==================== -->
+        <div class="level-section" id="level6">
+            <div class="level-title">第六关：控制措施与报告撰写</div>
+            <div class="scenario-box">
+                实验室结果：患者粪便和凉拌鸡丝样本中均检出副溶血性弧菌，且PFGE分型一致。调查结论：本次事件为一起由副溶血性弧菌污染凉拌鸡丝引起的食源性疾病暴发事件。
+            </div>
+
+            <!-- Q1 多选 -->
+            <div class="question-card" id="q6_1">
+                <div class="question-title">应立即采取哪些控制措施？（多选）<span class="score">10分</span></div>
+                <label class="option"><input type="checkbox" name="q6_1" value="A"> A. 暂停食堂供餐，封存剩余食品</label>
+                <label class="option"><input type="checkbox" name="q6_1" value="B"> B. 对食堂进行全面消毒</label>
+                <label class="option"><input type="checkbox" name="q6_1" value="C"> C. 对食堂工作人员进行健康检查和培训</label>
+                <label class="option"><input type="checkbox" name="q6_1" value="D"> D. 加强食品安全监管，规范操作流程</label>
+                <label class="option"><input type="checkbox" name="q6_1" value="E"> E. 对患者进行隔离治疗</label>
+                <label class="option"><input type="checkbox" name="q6_1" value="F"> F. 开展健康宣教</label>
+                <div class="feedback" id="fb_q6_1"></div>
+            </div>
+
+            <!-- Q2 排序 -->
+            <div class="question-card" id="q6_2">
+                <div class="question-title">调查报告应包含以下内容，请按逻辑顺序排列。<span class="score">10分</span></div>
+                <div class="sort-container">
+                    <div class="sort-item"><select id="sort6_1"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>事件概况与背景</div>
+                    <div class="sort-item"><select id="sort6_2"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>调查方法与过程</div>
+                    <div class="sort-item"><select id="sort6_3"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>描述性分析结果</div>
+                    <div class="sort-item"><select id="sort6_4"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>分析性研究结果</div>
+                    <div class="sort-item"><select id="sort6_5"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>结论与讨论</div>
+                    <div class="sort-item"><select id="sort6_6"><option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>建议与控制措施</div>
+                </div>
+                <div class="feedback" id="fb_q6_2"></div>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn btn-primary" onclick="submitLevel(6)">提交本关答案</button>
+            </div>
+        </div>
+
+        <!-- ==================== 最终结果 ==================== -->
+        <div class="final-result" id="finalResult">
+            <h2>🎉 闯关完成！</h2>
+            <div class="final-score" id="finalScore">0</div>
+            <div>/ 100 分</div>
+            <div class="final-grade" id="finalGrade"></div>
+            <div class="level-score-summary" id="scoreSummary"></div>
+            <div class="btn-center" style="margin-top:20px;">
+                <button class="btn btn-success" onclick="location.reload()">重新挑战</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== 数据存储 =====
+        let totalScore = 0;
+        let levelScores = {};
+        let currentLevel = 1;
+        const totalLevels = 6;
+
+        // ===== 答案配置 =====
+        const answers = {
+            // 第一关
+            q1_1: { type: 'multi', correct: ['A','B','C','D','E'], score: 10,
+                explain: '出发前应准备：采样耗材、个人防护装备、调查表格和记录工具、样本保存箱和冷链设备、消毒用品。宣传手册不是应急出发的必备物资。' },
+            q1_2: { type: 'sort', correct: ['1','2','3','4','5','6'], score: 10,
+                explain: '正确优先级：①患者基本信息 ②发病时间和症状特征 ③共同暴露史 ④学校食堂卫生状况 ⑤类似病例搜索 ⑥学校总人数和就餐人数' },
+            // 第二关
+            q2_1: { type: 'fill', score: 12, keywords: {
+                    time: ['9月4','9月5','4日','5日'],
+                    place: ['学校','食堂','中学','学生'],
+                    symptom: ['腹泻','腹痛','呕吐','恶心','发热','水样便'],
+                    epi: ['食堂','就餐','进餐','用餐','聚餐']
+                },
+                explain: '疑似病例定义应包含：时间（9月4-5日）、地点/人群（该中学食堂就餐学生）、临床表现（腹泻/腹痛/呕吐/发热等）、流行病学史（食堂就餐史）。' },
+            q2_2: { type: 'multi', correct: ['A','B','C','D','E'], score: 8,
+                explain: '病例搜索应采用多种方法：查阅就诊记录、主动到班级搜索、设立咨询点、调查食堂工作人员、询问校医和班主任，全面搜索才能避免遗漏。' },
+            // 第三关
+            q3_1: { type: 'match', correct: { A: '1', B: '2', C: '2', D: '1' }, score: 10,
+                explain: '食堂厨房卫生学调查→基础防护；面对面流行病学调查→一级防护（近距离接触患者）；采集粪便样本→一级防护（接触感染性标本）；采集食物和环境样本→基础防护。食源性疾病一般不需要二级及以上防护。' },
+            q3_2: { type: 'match', correct: { 1: 'A', 2: 'B', 3: 'D', 4: 'C' }, score: 10,
+                explain: '粪便样本→挑取黏液或脓血部分(A)；剩余食物→无菌镊子选取约20g(B)；咽拭子→在扁桃体和咽后壁擦拭(D)；物体表面→无菌棉签蘸湿培养液涂抹(C)。' },
+            // 第四关
+            q4_1: { type: 'single', correct: 'B', score: 10,
+                explain: '短时间集中发病、单峰分布是点源暴发（一次性共同暴露）的典型特征。所有患者有共同的暴露时间（9月4日晚餐），潜伏期一致。' },
+            q4_2: { type: 'multi', correct: ['A','B','C','D','E'], score: 10,
+                explain: '所有选项都是重要的流行病学特征：潜伏期集中、仅住宿生发病、年级间罹患率差异、食堂人员未发病、共同就餐史，这些都指向食堂某次餐食污染。' },
+            q4_3: { type: 'fill', score: 10, keywords: {
+                    route: ['食物','食源','经口','消化道','食品'],
+                    source: ['食堂','食物','菜品','凉菜','晚餐','餐食'],
+                    pathogen: ['细菌','沙门','副溶血','弧菌','金黄色葡萄球菌','致病菌','食物中毒']
+                },
+                explain: '传播途径：食物传播/食源性传播；污染来源：学校食堂9月4日晚餐食物；可能致病因子：细菌性病原体（如沙门氏菌、副溶血性弧菌等）。' },
+            // 第五关
+            q5_1: { type: 'single', correct: 'B', score: 10,
+                explain: '凉拌鸡丝的RR值为8.3（95%CI: 4.2-16.4），远高于其他食品，且置信区间不包含1，有统计学意义，是最可能的危险食品。' },
+            q5_2: { type: 'multi', correct: ['A','B','C','D','E'], score: 10,
+                explain: '判断依据包括：食用者罹患率高(42.3% vs 5.1%)、RR值大(8.3)、置信区间不含1(有统计学意义)、其他食品RR≈1(排除)、凉拌菜本身风险高。' },
+            // 第六关
+            q6_1: { type: 'multi', correct: ['A','B','C','D','E','F'], score: 10,
+                explain: '所有措施都应采取：暂停供餐并封存食品、全面消毒、工作人员健康检查和培训、加强监管、患者治疗、健康宣教，这是综合防控的要求。' },
+            q6_2: { type: 'sort', correct: ['1','2','3','4','5','6'], score: 10,
+                explain: '调查报告的逻辑顺序：①事件概况与背景 ②调查方法与过程 ③描述性分析结果 ④分析性研究结果 ⑤结论与讨论 ⑥建议与控制措施' }
+        };
+
+        // ===== 选项点击高亮 =====
+        document.querySelectorAll('.option').forEach(opt => {
+            opt.addEventListener('click', function() {
+                const input = this.querySelector('input');
+                if (input.type === 'radio') {
+                    const name = input.name;
+                    document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                        r.closest('.option').classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    input.checked = true;
+                } else {
+                    input.checked = !input.checked;
+                    this.classList.toggle('selected', input.checked);
+                }
+            });
+        });
+
+        // ===== 提交关卡 =====
+        function submitLevel(level) {
+            let score = 0;
+            let maxScore = 0;
+
+            if (level === 1) {
+                score += gradeMulti('q1_1');
+                score += gradeSort('q1_2', ['sort1_1','sort1_2','sort1_3','sort1_4','sort1_5','sort1_6']);
+                maxScore = 20;
+            } else if (level === 2) {
+                score += gradeFill('q2_1', 'fill2');
+                score += gradeMulti('q2_2');
+                maxScore = 20;
+            } else if (level === 3) {
+                score += gradeMatch('q3_1', ['match3_A','match3_B','match3_C','match3_D'], answers.q3_1);
+                score += gradeMatch('q3_2', ['sample_1','sample_2','sample_3','sample_4'], answers.q3_2);
+                maxScore = 20;
+            } else if (level === 4) {
+                score += gradeSingle('q4_1');
+                score += gradeMulti('q4_2');
+                score += gradeFill('q4_3', 'fill4');
+                maxScore = 30;
+            } else if (level === 5) {
+                score += gradeSingle('q5_1');
+                score += gradeMulti('q5_2');
+                maxScore = 20;
+            } else if (level === 6) {
+                score += gradeMulti('q6_1');
+                score += gradeSort('q6_2', ['sort6_1','sort6_2','sort6_3','sort6_4','sort6_5','sort6_6']);
+                maxScore = 20;
+            }
+
+            levelScores[level] = { score, maxScore };
+            totalScore = Object.values(levelScores).reduce((sum, l) => sum + l.score, 0);
+
+            // 更新显示
+            document.getElementById('totalScore').textContent = '当前总分：' + totalScore;
+            document.getElementById('progressBar').style.width = (level / totalLevels * 100) + '%';
+            document.getElementById('levelText').textContent = `第 ${Math.min(level + 1, totalLevels)} / ${totalLevels} 关`;
+
+            // 禁用当前关卡按钮
+            const btn = document.querySelector(`#level${level} .btn`);
+            btn.textContent = `已提交 (${score}/${maxScore}分)`;
+            btn.classList.add('disabled');
+
+            // 延迟后切换到下一关
+            setTimeout(() => {
+                document.getElementById(`level${level}`).classList.remove('active');
+                if (level < totalLevels) {
+                    document.getElementById(`level${level + 1}`).classList.add('active');
+                    currentLevel = level + 1;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    showFinalResult();
+                }
+            }, 1500);
+        }
+
+        // ===== 评分函数 =====
+        function gradeSingle(qid) {
+            const ans = answers[qid];
+            const selected = document.querySelector(`input[name="${qid}"]:checked`);
+            const fb = document.getElementById('fb_' + qid);
+            if (selected && selected.value === ans.correct) {
+                fb.className = 'feedback show correct-fb';
+                fb.innerHTML = `✅ 正确！+${ans.score}分<br>${ans.explain}`;
+                // 高亮正确选项
+                document.querySelectorAll(`input[name="${qid}"]`).forEach(inp => {
+                    if (inp.value === ans.correct) inp.closest('.option').classList.add('correct');
+                    else if (inp.checked) inp.closest('.option').classList.add('wrong');
+                });
+                return ans.score;
+            } else {
+                fb.className = 'feedback show wrong-fb';
+                fb.innerHTML = `❌ 错误。正确答案：${ans.correct}<br>${ans.explain}`;
+                document.querySelectorAll(`input[name="${qid}"]`).forEach(inp => {
+                    if (inp.value === ans.correct) inp.closest('.option').classList.add('correct');
+                    else if (inp.checked) inp.closest('.option').classList.add('wrong');
+                });
+                return 0;
+            }
+        }
+
+        function gradeMulti(qid) {
+            const ans = answers[qid];
+            const checked = Array.from(document.querySelectorAll(`input[name="${qid}"]:checked`)).map(i => i.value);
+            const fb = document.getElementById('fb_' + qid);
+            const correctSet = new Set(ans.correct);
+            const checkedSet = new Set(checked);
+            const isCorrect = correctSet.size === checkedSet.size && [...correctSet].every(v => checkedSet.has(v));
+
+            // 高亮
+            document.querySelectorAll(`input[name="${qid}"]`).forEach(inp => {
+                const opt = inp.closest('.option');
+                if (correctSet.has(inp.value)) opt.classList.add('correct');
+                else if (inp.checked) opt.classList.add('wrong');
+            });
+
+            if (isCorrect) {
+                fb.className = 'feedback show correct-fb';
+                fb.innerHTML = `✅ 完全正确！+${ans.score}分<br>${ans.explain}`;
+                return ans.score;
+            } else {
+                // 部分得分
+                let correctCount = checked.filter(v => correctSet.has(v)).length;
+                let wrongCount = checked.filter(v => !correctSet.has(v)).length;
+                let partial = Math.max(0, Math.round(ans.score * (correctCount - wrongCount) / correctSet.size));
+                if (partial > 0) {
+                    fb.className = 'feedback show partial-fb';
+                    fb.innerHTML = `⚠️ 部分正确，+${partial}分。正确答案：${ans.correct.join(', ')}<br>${ans.explain}`;
+                } else {
+                    fb.className = 'feedback show wrong-fb';
+                    fb.innerHTML = `❌ 错误。正确答案：${ans.correct.join(', ')}<br>${ans.explain}`;
+                }
+                return partial;
+            }
+        }
+
+        function gradeSort(qid, selectIds) {
+            const ans = answers[qid];
+            const userValues = selectIds.map(id => document.getElementById(id).value);
+            const fb = document.getElementById('fb_' + qid);
+            const isCorrect = JSON.stringify(userValues) === JSON.stringify(ans.correct);
+
+            if (isCorrect) {
+                fb.className = 'feedback show correct-fb';
+                fb.innerHTML = `✅ 排序完全正确！+${ans.score}分<br>${ans.explain}`;
+                return ans.score;
+            } else {
+                let correctCount = userValues.filter((v, i) => v === ans.correct[i]).length;
+                let partial = Math.round(ans.score * correctCount / ans.correct.length);
+                if (partial > 0) {
+                    fb.className = 'feedback show partial-fb';
+                    fb.innerHTML = `⚠️ 部分正确（${correctCount}/${ans.correct.length}），+${partial}分<br>${ans.explain}`;
+                } else {
+                    fb.className = 'feedback show wrong-fb';
+                    fb.innerHTML = `❌ 排序错误<br>${ans.explain}`;
+                }
+                return partial;
+            }
+        }
+
+        function gradeMatch(qid, selectIds, ansConfig) {
+            const fb = document.getElementById('fb_' + qid);
+            const correct = ansConfig.correct;
+            const keys = Object.keys(correct);
+            let correctCount = 0;
+
+            selectIds.forEach((id, i) => {
+                const val = document.getElementById(id).value;
+                const key = keys[i];
+                if (val === correct[key]) correctCount++;
+            });
+
+            const score = Math.round(ansConfig.score * correctCount / keys.length);
+            if (correctCount === keys.length) {
+                fb.className = 'feedback show correct-fb';
+                fb.innerHTML = `✅ 全部配对正确！+${ansConfig.score}分<br>${ansConfig.explain}`;
+            } else if (score > 0) {
+                fb.className = 'feedback show partial-fb';
+                fb.innerHTML = `⚠️ 配对${correctCount}/${keys.length}正确，+${score}分<br>${ansConfig.explain}`;
+            } else {
+                fb.className = 'feedback show wrong-fb';
+                fb.innerHTML = `❌ 配对错误<br>${ansConfig.explain}`;
+            }
+            return score;
+        }
+
+        function gradeFill(qid, prefix) {
+            const ans = answers[qid];
+            const fb = document.getElementById('fb_' + qid);
+            let totalMatched = 0;
+            let totalFields = Object.keys(ans.keywords).length;
+            let details = [];
+
+            for (let field in ans.keywords) {
+                let inputId = '';
+                if (prefix === 'fill2') {
+                    if (field === 'time') inputId = 'fill2_time';
+                    else if (field === 'place') inputId = 'fill2_place';
+                    else if (field === 'symptom') inputId = 'fill2_symptom';
+                    else if (field === 'epi') inputId = 'fill2_epi';
+                } else if (prefix === 'fill4') {
+                    if (field === 'route') inputId = 'fill4_route';
+                    else if (field === 'source') inputId = 'fill4_source';
+                    else if (field === 'pathogen') inputId = 'fill4_pathogen';
+                }
+                const val = document.getElementById(inputId).value;
+                const matched = ans.keywords[field].some(kw => val.includes(kw));
+                if (matched) {
+                    totalMatched++;
+                    details.push(`✅ ${field}`);
+                } else {
+                    details.push(`❌ ${field}（关键词：${ans.keywords[field].join('/')}）`);
+                }
+            }
+
+            const score = Math.round(ans.score * totalMatched / totalFields);
+            if (totalMatched === totalFields) {
+                fb.className = 'feedback show correct-fb';
+                fb.innerHTML = `✅ 全部要点正确！+${ans.score}分<br>${details.join('<br>')}<br>${ans.explain}`;
+            } else if (score > 0) {
+                fb.className = 'feedback show partial-fb';
+                fb.innerHTML = `⚠️ 部分正确，+${score}分<br>${details.join('<br>')}<br>${ans.explain}`;
+            } else {
+                fb.className = 'feedback show wrong-fb';
+                fb.innerHTML = `❌ 未匹配到关键词<br>${details.join('<br>')}<br>${ans.explain}`;
+            }
+            return score;
+        }
+
+        // ===== 最终结果 =====
+        function showFinalResult() {
+            document.getElementById('finalResult').style.display = 'block';
+            document.getElementById('progressBar').style.width = '100%';
+
+            // 计算满分
+            const maxTotal = Object.values(levelScores).reduce((sum, l) => sum + l.maxScore, 0);
+            // 按比例换算为100分制
+            const scaledScore = Math.round(totalScore / maxTotal * 100);
+
+            document.getElementById('finalScore').textContent = scaledScore;
+
+            const gradeEl = document.getElementById('finalGrade');
+            if (scaledScore >= 90) {
+                gradeEl.textContent = '🏆 优秀 - 流调专家！';
+                gradeEl.className = 'final-grade grade-excellent';
+            } else if (scaledScore >= 75) {
+                gradeEl.textContent = '👍 良好 - 业务骨干！';
+                gradeEl.className = 'final-grade grade-good';
+            } else if (scaledScore >= 60) {
+                gradeEl.textContent = '📝 及格 - 继续加油！';
+                gradeEl.className = 'final-grade grade-pass';
+            } else {
+                gradeEl.textContent = '📚 需要加强学习！';
+                gradeEl.className = 'final-grade grade-fail';
+            }
+
+            const levelNames = ['', '应急响应与信息收集', '病例定义与病例搜索', '现场防护与样本采集', '描述性分析与假设建立', '分析性研究与验证假设', '控制措施与报告撰写'];
+            let summaryHTML = '';
+            for (let i = 1; i <= totalLevels; i++) {
+                const ls = levelScores[i] || { score: 0, maxScore: 0 };
+                summaryHTML += `<div class="level-score-row"><span>第${i}关：${levelNames[i]}</span><span>${ls.score} / ${ls.maxScore}</span></div>`;
+            }
+            summaryHTML += `<div class="level-score-row" style="font-weight:bold;border-top:2px solid #2980b9;padding-top:12px;"><span>总计（换算百分制）</span><span>${scaledScore} / 100</span></div>`;
+            document.getElementById('scoreSummary').innerHTML = summaryHTML;
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
