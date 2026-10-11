@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>突发公共卫生事件流行病学溯源模拟</title>
+<style>
+:root{
+  --ink:#1B2631; --ink2:#4B5966; --ink3:#7A8794;
+  --paper:#F6F7F5; --panel:#FFFFFF; --rule:#DCE1E4; --rule2:#EEF1F2;
+  --water:#0D6B74; --water-bg:#E4F1F1;
+  --air:#8A5B24; --air-bg:#F5ECE0;
+  --rad:#B88A00; --rad-ink:#3A2E00; --rad-bg:#FAF2D6;
+  --alert:#B42318; --alert-bg:#FCEBE8;
+  --lab:#2B5797; --lab-bg:#E9EFF8;
+  --ok:#1E7046; --ok-bg:#E3F2E9;
+  --side:#15202A; --side2:#1F2E3B; --side-text:#DCE3E8; --side-dim:#8D9BA7;
+  --serif:"Songti SC","STSong","Noto Serif CJK SC","Source Han Serif SC","Noto Serif SC","SimSun",serif;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;font-family:var(--sans);font-size:16px;line-height:1.75;color:var(--ink);background:var(--paper);display:flex;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #4C8DF6;outline-offset:2px;border-radius:3px}
+
+/* ---------- 侧栏 ---------- */
+#sidebar{width:272px;flex-shrink:0;background:var(--side);color:var(--side-text);height:100vh;overflow-y:auto;position:sticky;top:0;display:flex;flex-direction:column}
+.brand{padding:22px 22px 18px;border-bottom:1px solid #26384A}
+.brand b{display:block;font-family:var(--serif);font-size:19px;letter-spacing:.04em;color:#fff}
+.brand span{font-size:12.5px;color:var(--side-dim)}
+.nav-top{padding:10px 0;border-bottom:1px solid #26384A}
+.nav-group{padding:12px 0 8px;border-bottom:1px solid #26384A}
+.nav-title{display:flex;align-items:center;gap:8px;padding:0 22px 6px;font-size:13px;color:var(--side-dim);letter-spacing:.06em}
+.nav-title i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.nav-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:9px 22px 9px 40px;border:0;background:none;text-align:left;cursor:pointer;font-size:15px;color:var(--side-text);border-left:3px solid transparent;transition:background .15s}
+.nav-top .nav-item{padding-left:22px}
+.nav-item:hover{background:var(--side2)}
+.nav-item.active{background:var(--side2);color:#fff;font-weight:600;border-left-color:var(--c,#fff)}
+.nav-item .seen{font-size:12px;color:#6FBF8F}
+.side-foot{margin-top:auto;padding:16px 22px;font-size:12px;color:var(--side-dim);line-height:1.6}
+
+/* ---------- 主区 ---------- */
+#main{flex:1;min-width:0;height:100vh;overflow-y:auto}
+.wrap{max-width:900px;margin:0 auto;padding:40px 40px 80px}
+.topbar{display:none}
+h1,h2,h3,h4{font-family:var(--serif);line-height:1.35;margin:0}
+h1{font-size:31px;font-weight:700;letter-spacing:.02em}
+h2{font-size:22px;font-weight:700;margin:44px 0 14px}
+h3{font-size:18px;font-weight:700;margin:24px 0 8px}
+h4{font-size:15px;font-weight:700;font-family:var(--sans);margin:0 0 4px;color:var(--ink2)}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:1.4em}
+li{margin:3px 0}
+b,strong{font-weight:650}
+.lead{font-size:17px;color:var(--ink2);margin-top:12px;max-width:44em}
+.muted{color:var(--ink3)}
+.small{font-size:14px}
+
+.cat-tag{display:inline-block;font-size:13px;font-weight:600;padding:2px 10px;border-radius:3px;margin-bottom:12px}
+.cat-water{color:var(--water);background:var(--water-bg)}
+.cat-air{color:var(--air);background:var(--air-bg)}
+.cat-rad{color:var(--rad-ink);background:var(--rad-bg)}
+
+/* 表格 */
+.tbl-wrap{overflow-x:auto;margin:14px 0 18px;border:1px solid var(--rule);border-radius:4px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:14.5px;line-height:1.6}
+th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--rule2)}
+th{background:#F1F3F4;font-weight:650;color:var(--ink2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right}
+
+/* 提示块 */
+.note{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--ink3);padding:12px 16px;border-radius:3px;margin:14px 0;font-size:15px}
+.note.lab{border-left-color:var(--lab);background:var(--lab-bg)}
+.note.alert{border-left-color:var(--alert);background:var(--alert-bg)}
+.note.ok{border-left-color:var(--ok);background:var(--ok-bg)}
+.note p:last-child,.note ul:last-child{margin-bottom:0}
+
+/* 按钮 */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:4px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;font-size:15px;font-weight:600;transition:background .15s}
+.btn:hover{background:#2C3B49}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ghost:hover{background:var(--rule2)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* 测验 */
+.quiz{margin-top:12px}
+.q{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:16px 18px;margin:12px 0}
+.q-stem{font-weight:600;margin-bottom:10px}
+.opt{display:flex;gap:10px;width:100%;text-align:left;padding:9px 12px;margin:6px 0;border:1px solid var(--rule);border-radius:4px;background:#FBFBFA;cursor:pointer;font-size:15px;line-height:1.6}
+.opt:hover:not(:disabled){border-color:var(--ink3);background:#fff}
+.opt .k{font-weight:700;color:var(--ink3);min-width:1.2em}
+.opt.right{border-color:var(--ok);background:var(--ok-bg)}
+.opt.wrong{border-color:var(--alert);background:var(--alert-bg)}
+.opt:disabled{cursor:default}
+.q-exp{margin-top:10px;font-size:14.5px;padding:10px 12px;border-radius:3px;background:var(--rule2)}
+.q-exp b{margin-right:4px}
+
+@media (max-width:900px){
+  body{display:block}
+  #sidebar{position:fixed;left:0;top:0;z-index:30;transform:translateX(-100%);transition:transform .25s}
+  body.nav-open #sidebar{box-shadow:4px 0 24px rgba(0,0,0,.25)}
+  body.nav-open #sidebar{transform:none}
+  .topbar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;background:var(--side);color:#fff;padding:10px 16px}
+  .topbar button{background:none;border:1px solid #3A4E60;color:#fff;border-radius:4px;padding:4px 10px;cursor:pointer}
+  #main{height:auto;overflow:visible}
+  .wrap{padding:24px 18px 64px}
+  h1{font-size:25px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{#sidebar,.topbar{display:none}#main{height:auto;overflow:visible}}
+
+.wrap{max-width:960px}
+/* 侧栏案例列表 */
+.case-link{display:block;width:100%;text-align:left;border:0;background:none;color:var(--side-text);padding:11px 22px 11px 19px;border-left:3px solid transparent;cursor:pointer;line-height:1.5}
+.case-link:hover{background:var(--side2)}
+.case-link.active{background:var(--side2);border-left-color:var(--c);color:#fff}
+.case-link b{display:block;font-size:15px;font-weight:600}
+.case-link span{display:block;font-size:12.5px;color:var(--side-dim)}
+.case-link .done{color:#6FBF8F}
+
+/* 欢迎页 */
+.intro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:22px 0 8px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);overflow:hidden}
+.intro-grid div{padding:14px 16px;border-right:1px solid var(--rule)}
+.intro-grid div:last-child{border-right:0}
+.intro-grid b{display:block;font-family:var(--serif);font-size:18px;margin:2px 0 4px}
+.intro-grid i{font-style:normal;font-family:var(--serif);font-size:26px;font-weight:700;color:var(--ink3)}
+.intro-grid span{font-size:14px;color:var(--ink2);line-height:1.6;display:block}
+.registry td:first-child{white-space:nowrap}
+.registry button{border:0;background:none;padding:0;cursor:pointer;font-family:var(--serif);font-size:16.5px;font-weight:700;text-align:left;color:var(--ink);border-bottom:1px dashed var(--ink3)}
+.registry .lv{font-size:13px;border:1px solid var(--rule);border-radius:3px;padding:0 6px;white-space:nowrap}
+.ten{columns:2;column-gap:28px;font-size:15px}
+.ten li{break-inside:avoid}
+
+/* 案件头 */
+.dossier-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.facts{display:grid;grid-template-columns:repeat(4,auto);gap:4px 28px;margin:14px 0 0;font-size:14.5px}
+.facts dt{color:var(--ink3);font-size:12.5px}
+.facts dd{margin:0;font-weight:600}
+.status{font-size:13px;font-weight:600;padding:3px 12px;border-radius:999px;background:var(--lab-bg);color:var(--lab);white-space:nowrap}
+.status.closed{background:var(--ok-bg);color:var(--ok)}
+
+/* 步骤条 */
+.stepper{display:grid;grid-template-columns:repeat(4,1fr);margin:28px 0 8px;list-style:none;padding:0;counter-reset:st}
+.stepper li{counter-increment:st;margin:0}
+.stepper button{width:100%;border:0;background:none;text-align:left;padding:10px 4px 10px 0;cursor:pointer;border-top:4px solid var(--rule);color:var(--ink3);font-size:15px}
+.stepper button::before{content:"第" counter(st) "步";display:block;font-size:12.5px}
+.stepper button b{font-weight:650}
+.stepper button.done{border-top-color:var(--ok);color:var(--ink2)}
+.stepper button.now{border-top-color:var(--c);color:var(--ink)}
+.stepper button:disabled{cursor:not-allowed;opacity:.6}
+
+.phase{animation:rise .35s ease}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.phase h2:first-child{margin-top:22px}
+.sec{margin:28px 0}
+.sec>h3{display:flex;align-items:baseline;gap:10px}
+.sec>h3 small{font-family:var(--sans);font-size:13px;font-weight:400;color:var(--ink3)}
+
+/* 接报记录 */
+.log{background:var(--panel);border:1px solid var(--rule);border-radius:4px}
+.log-row{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:14px 18px;border-bottom:1px solid var(--rule2)}
+.log-row:last-child{border-bottom:0}
+.log-t{font-family:var(--serif);font-size:20px;font-weight:700;line-height:1.3}
+.log-src{font-size:13px;color:var(--ink3);margin-bottom:4px}
+.log-text{font-size:15.5px}
+.story{font-family:var(--serif);font-size:17px;line-height:1.95;max-width:42em}
+.story p{margin-bottom:14px}
+
+/* 病例卡 */
+.pts{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.pt{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:14px 16px}
+.pt b{display:block;font-family:var(--serif);font-size:16.5px;margin-bottom:6px}
+.pt p{font-size:14.5px;line-height:1.65;margin-bottom:10px}
+.pt dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0;font-size:13.5px;border-top:1px solid var(--rule2);padding-top:8px}
+.pt dt{color:var(--ink3)}
+.pt dd{margin:0;font-weight:600}
+
+/* 决策 */
+.decision{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--c);border-radius:4px;padding:16px 18px}
+.decision .q-stem{font-family:var(--serif);font-size:17.5px}
+.fb{margin-top:10px;padding:10px 12px;border-radius:3px;font-size:14.5px}
+.fb.ok{background:var(--ok-bg);color:#14532D}
+.fb.no{background:var(--alert-bg);color:#7A1C14}
+.judge{margin-top:14px}
+
+/* 图表 */
+.chart{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:10px 12px 4px}
+.chart svg{width:100%;height:auto;display:block}
+.tl{list-style:none;padding:0;margin:0;background:var(--panel);border:1px solid var(--rule);border-radius:4px}
+.tl li{display:grid;grid-template-columns:120px 1fr;gap:14px;padding:9px 16px;border-bottom:1px solid var(--rule2);margin:0;font-size:15px;position:relative}
+.tl li:last-child{border-bottom:0}
+.tl li b{font-weight:700;font-family:var(--serif)}
+.reveal{margin-top:10px}
+.reveal-body{margin-top:10px}
+
+/* 罹患率 */
+.ar td.hide,.ar th.hide{color:transparent;background:repeating-linear-gradient(-45deg,#F1F3F4 0 6px,#E8EBED 6px 12px)}
+.ar caption{caption-side:top;text-align:left;font-weight:650;padding:10px 12px 6px;font-size:14.5px}
+.rr-big{font-weight:700;color:var(--alert)}
+
+/* 嫌疑因素 */
+.sus-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:10px}
+.sus{border:1px solid var(--rule);background:var(--panel);border-radius:4px;padding:12px 14px;text-align:left;cursor:pointer;font-size:15px;font-weight:600;line-height:1.5}
+.sus:hover:not(:disabled){border-color:var(--ink3)}
+.sus.no{border-color:#E7B8B2;background:#FFF8F7;color:var(--ink3);text-decoration:line-through;text-decoration-color:#E7B8B2}
+.sus.ok{border-color:var(--ok);background:var(--ok-bg)}
+.sus:disabled{cursor:default}
+.sus-log{margin-top:12px}
+.sus-log p{font-size:14.5px;margin:6px 0;padding:8px 12px;border-radius:3px}
+
+/* 采样 */
+.samples{background:var(--panel);border:1px solid var(--rule);border-radius:4px}
+.smp{display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:start;padding:11px 16px;border-bottom:1px solid var(--rule2);cursor:pointer;font-size:15px}
+.smp:last-child{border-bottom:0}
+.smp input{width:18px;height:18px;margin-top:3px;accent-color:var(--ink)}
+.smp .why{grid-column:2/4;font-size:13.5px;color:var(--ink2);margin-top:2px}
+.badge{font-size:12.5px;font-weight:650;padding:1px 8px;border-radius:3px;white-space:nowrap}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.miss{background:var(--alert-bg);color:var(--alert)}
+.badge.extra{background:#FFF4DB;color:#8A5A00}
+.badge.skip{background:var(--rule2);color:var(--ink3)}
+.lab-report{border:1px solid var(--rule);border-top:4px solid var(--lab);border-radius:4px;background:var(--panel);margin-top:16px}
+.lab-report header{display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--rule2);font-size:14px;color:var(--ink2)}
+.lab-report header b{font-family:var(--serif);font-size:17px;color:var(--ink)}
+.lab-report .tbl-wrap{border:0;margin:0;border-radius:0}
+
+/* 处置 */
+.conclusion{background:var(--ink);color:#fff;border-radius:4px;padding:16px 20px;font-size:16px}
+.conclusion b{font-family:var(--serif);font-size:18px;display:block;margin-bottom:4px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.act{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:14px 16px}
+.act h4{color:var(--ink);font-family:var(--serif);font-size:16.5px;margin-bottom:6px}
+.act ul{font-size:14.5px;margin:0;padding-left:1.2em}
+.notice{max-width:620px;margin:0 auto;background:#fff;border:1px solid var(--rule);padding:22px 28px;font-family:var(--serif);font-size:16px;line-height:1.95;box-shadow:0 1px 0 var(--rule),0 3px 0 -1px #fff,0 4px 0 -1px var(--rule)}
+.notice h4{text-align:center;font-family:var(--serif);font-size:20px;color:var(--alert);margin-bottom:10px;letter-spacing:.2em}
+.notice .sign{text-align:right;margin-top:12px;font-size:14.5px}
+.next-row{display:flex;justify-content:flex-end;gap:10px;margin-top:30px;padding-top:18px;border-top:1px solid var(--rule)}
+.score{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--rule);border-radius:4px;background:var(--panel);margin:14px 0}
+.score div{padding:14px 16px;border-right:1px solid var(--rule)}
+.score div:last-child{border-right:0}
+.score b{display:block;font-family:var(--serif);font-size:26px}
+.score span{font-size:13.5px;color:var(--ink3)}
+
+@media (max-width:900px){
+  .intro-grid,.score{grid-template-columns:1fr 1fr}
+  .intro-grid div:nth-child(2){border-right:0}
+  .intro-grid div:nth-child(-n+2){border-bottom:1px solid var(--rule)}
+  .facts{grid-template-columns:1fr 1fr}
+  .stepper button{font-size:13px}
+  .log-row{grid-template-columns:1fr;gap:4px}
+  .acts{grid-template-columns:1fr}
+  .ten{columns:1}
+  .tl li{grid-template-columns:86px 1fr}
+  .story{font-size:16px}
+  .chart{overflow-x:auto}
+  .chart svg{min-width:600px}
+  .ar table{min-width:560px}
+  .ar td:first-child{min-width:9em}
+}
+
+</style>
+</head>
+<body>
+<nav id="sidebar" aria-label="案例目录"></nav>
+<main id="main">
+  <div class="topbar"><button id="menu-btn" aria-label="打开目录">目录</button><span>应急溯源模拟</span></div>
+  <div class="wrap" id="content"></div>
+</main>
+<script>
+const CATS={water:{name:'饮用水污染',color:'#0D6B74'},air:{name:'大气污染',color:'#8A5B24'},rad:{name:'核与辐射',color:'#B88A00'}};
+const CASES=[];
+
+CASES.push({id:'nitrite',cat:'water',title:'青石村井水中毒事件',type:'饮用水化学性污染',short:'早饭后半小时，二十多位村民嘴唇发紫',loc:'某县青石村（虚构）',time:'10月某日清晨',level:'基础',
+report:[
+{t:'08:35',src:'青石村卫生室 周医生 → 乡镇卫生院',text:'今早7点多开始，村东头陆续有二十来个人头晕、心慌、嘴唇发紫，好几个小孩情况重。我给吸了氧，一点不见好……'},
+{t:'09:10',src:'乡镇卫生院 → 县疾控中心应急办',text:'青石村疑似群体性中毒，已有23人出现症状，5人较重，正在组织转运。'}],
+scene:`<p>九点五十分，县疾控应急小组赶到青石村。村卫生室门口挤满了人，几个孩子靠在大人怀里，嘴唇和指甲紫得发黑。</p><p>村东的41户人家共用一口压水井，村西则早已接通了镇里的自来水。前一天夜里下了一场暴雨。井西侧约40米有一家加工混凝土外加剂的小作坊，后院塑料棚里堆着几十袋白色晶体，棚顶有一角被风掀开了。压水井的水泥井台裂了一道缝，雨水顺着地面流向井口。</p><p>一位大婶说："今早的水喝着有点咸涩，我还以为是下雨把井水搅浑了。"</p>`,
+patients:[
+{name:'王小雨（化名），女，6岁',desc:'早餐喝了一碗小米粥。口唇、耳廓、甲床明显青紫，精神萎靡，呕吐2次。',vitals:[['心率','132次/分'],['呼吸','28次/分'],['血压','92/58 mmHg'],['血氧饱和度','85%，吸氧后无变化']]},
+{name:'李建国（化名），男，58岁',desc:'喝了两杯开水、吃了一碗面条。头晕、乏力、心悸，口唇轻度发绀，自述"不怎么喘"。',vitals:[['心率','104次/分'],['呼吸','20次/分'],['血压','128/80 mmHg'],['血氧饱和度','89%']]},
+{name:'张秀梅（化名），女，34岁',desc:'恶心、胸闷、四肢无力。护士抽血时发现血液呈暗褐色，像巧克力，在空气中摇晃也不变红。',vitals:[['心率','116次/分'],['呼吸','24次/分'],['血压','105/70 mmHg'],['血氧饱和度','86%']]}],
+q1:{q:'面对这批患者，最应优先采取的特效治疗是？',o:[
+{t:'高压氧治疗',ok:false,fb:'高压氧主要用于一氧化碳中毒。高铁血红蛋白本身不能携氧，单纯提高氧分压无法纠正，还会延误特效解毒。'},
+{t:'小剂量亚甲蓝（1～2 mg/kg）缓慢静注，联合维生素C和葡萄糖',ok:true,fb:'正确。小剂量亚甲蓝可将高铁血红蛋白还原为正常血红蛋白，是亚硝酸盐中毒的特效疗法。'},
+{t:'大剂量亚甲蓝（10 mg/kg）快速静注',ok:false,fb:'大剂量亚甲蓝本身是氧化剂，反而会使血红蛋白氧化为高铁血红蛋白，加重中毒。大剂量用于氰化物中毒。'},
+{t:'阿托品静注',ok:false,fb:'阿托品用于有机磷农药中毒。本次患者没有瞳孔缩小、大汗、流涎、肌颤等表现。'}]},
+judge:'共同暴露（同一口井）＋潜伏期短（30分钟至2小时）＋发绀明显而呼吸困难相对较轻＋吸氧不能纠正＋血液呈巧克力色，指向<b>高铁血红蛋白血症</b>，首先考虑亚硝酸盐中毒。下一步要用流行病学证据确认暴露来源。',
+def:'<b>可疑病例：</b>10月X日0时以后，青石村及周边居民中出现头晕、乏力、心悸、恶心之一，并伴口唇或甲床发绀者。<br><b>确诊病例：</b>可疑病例中血高铁血红蛋白高于10%者。',
+curve:{labels:['07:00','07:30','08:00','08:30','09:00','09:30','10:00'],counts:[0,3,8,7,3,1,1],mark:{i:0,label:'早餐（7—8点）'},x:'发病时间（每30分钟）'},
+timeNote:'病例在早餐后30分钟至3小时内集中出现，曲线陡升陡降、呈单峰，符合<b>点源暴露</b>。末例出现在10点后，此时村医已通知停用井水。潜伏期以小时计，远短于肠道传染病（以天计），支持化学性中毒。',
+place:'23例病例全部来自村东共用压水井的41户；村西使用镇自来水的87户无一发病。压水井位于作坊东侧约40米处，地势比作坊低约1米；井台水泥破裂，前夜暴雨后地表积水曾漫至井口。',
+ar:[{title:'按早餐时是否饮用东井水（含用井水煮的粥、面和开水）',groups:[{label:'饮用东井水',cases:23,total:118},{label:'未饮用（外出、只喝牛奶等）',cases:0,total:38}]}],
+person:'男12例，女11例，年龄2～76岁。6名儿童中4人为重症（体重轻，按体重计算的摄入量更大）。喝了2碗以上的人重症比例明显高于1碗以下者，呈<b>剂量—反应关系</b>。',
+suspects:[
+{n:'亚硝酸盐',ok:true,why:'短潜伏期、发绀且吸氧不缓解、巧克力色血液，与高铁血红蛋白血症完全吻合；作坊堆放的白色晶体提示污染来源。'},
+{n:'砷化物',ok:false,why:'砷中毒以剧烈呕吐、腹泻（米泔样或血样便）和口中金属味为主。本次病例胃肠症状轻，且以发绀为突出表现。'},
+{n:'氰化物',ok:false,why:'氰化物中毒皮肤黏膜呈鲜红色，呼气有苦杏仁味，进展极快甚至骤死；本次为青紫色，病情相对平稳。'},
+{n:'有机磷农药',ok:false,why:'有机磷中毒应有瞳孔缩小、大汗、流涎、肌束震颤，本次病例均无。'},
+{n:'一氧化碳',ok:false,why:'有几户人家用煤炉做早饭，但用电饭锅的家庭同样发病；CO中毒与同室聚集有关，而本次与饮水相关，且皮肤为青紫而非樱桃红。'},
+{n:'霍乱弧菌',ok:false,why:'霍乱潜伏期1～3天，以无痛性腹泻为主，不会在早餐后1小时内群体发病，也不引起发绀。'}],
+samples:[
+{n:'涉事压水井井水（多点、多次采集，冷藏避光）',need:true,why:'确定污染物和浓度的核心样本。'},
+{n:'患者家中剩余的粥、面汤和开水',need:true,why:'验证经口摄入途径，估算摄入量。'},
+{n:'患者静脉血，尽早采集，测高铁血红蛋白',need:true,why:'高铁血红蛋白会自行还原，使用亚甲蓝后更会迅速下降，必须尽早采血。'},
+{n:'患者呕吐物',need:true,why:'可直接检出毒物。'},
+{n:'作坊内的白色晶体及包装袋',need:true,why:'确认污染来源，与水样成分比对。'},
+{n:'村西自来水（对照样）',need:true,why:'作为对照，排除管网水污染。'},
+{n:'患者粪便霍乱弧菌培养',need:false,why:'临床和流行病学特征均不支持肠道传染病，不是首要检测。'},
+{n:'患者全血胆碱酯酶活力',need:false,why:'没有毒蕈碱样和烟碱样表现，不是必要项目。'}],
+results:`<table><tr><th>样本</th><th>检测项目</th><th>结果</th><th>判定</th></tr>
+<tr><td>东井井水</td><td>亚硝酸盐（现场格里斯试剂快检、实验室分光光度法）</td><td>约760 mg/L</td><td>严重超标</td></tr>
+<tr><td>剩余小米粥</td><td>亚硝酸盐</td><td>约590 mg/kg</td><td>阳性</td></tr>
+<tr><td>呕吐物</td><td>亚硝酸盐</td><td>检出</td><td>阳性</td></tr>
+<tr><td>患者血（王某、张某、李某）</td><td>高铁血红蛋白</td><td>42%、31%、18%</td><td>显著升高（正常低于2%）</td></tr>
+<tr><td>作坊白色晶体</td><td>成分鉴定</td><td>亚硝酸钠，纯度约98%</td><td>与水样一致</td></tr>
+<tr><td>村西自来水</td><td>亚硝酸盐</td><td>未检出</td><td>合格</td></tr></table>`,
+resultNote:'水样、食物、呕吐物和患者血液四条证据相互印证，作坊亚硝酸钠与井水污染物一致。污染途径：暴雨冲刷露天堆放的亚硝酸钠，形成地表径流，经破损井台渗入浅层井水。',
+conclusion:'青石村群体性急性亚硝酸盐中毒事件。作坊违规露天堆放的亚硝酸钠被暴雨冲刷，沿破损井台进入村东浅井，村民饮用后发病。共23例，重症5例，经救治全部好转，无死亡。',
+q2:{q:'本事件属于环境因素所致的群体性急性中毒，责任报告单位应在多长时间内报告？',o:[
+{t:'2小时内',ok:true,fb:'正确。环境因素改变所致急性病例3例及以上，即达到突发公共卫生事件相关信息报告标准，应在2小时内报告。'},
+{t:'12小时内',ok:false,fb:'报告时限为2小时。'},{t:'24小时内',ok:false,fb:'24小时是乙类传染病的报告时限；突发公共卫生事件相关信息应在2小时内报告。'},{t:'调查结束后一并报告',ok:false,fb:'报告应在发现后及时进行，并按初次、进程、结案报告的程序补充。'}]},
+actions:[
+['医疗救治',['按病情分级：重症（发绀明显、意识改变或高铁血红蛋白超过30%）立即转县医院，小剂量亚甲蓝1～2 mg/kg缓慢静注，必要时1小时后重复。','轻症口服或静滴维生素C、葡萄糖，留观至发绀消退。','儿童优先救治；询问G6PD缺乏史，必要时改用维生素C并加强支持治疗。']],
+['控制污染源',['立即封闭压水井，张贴"禁止饮用"警示，村广播逐户通知。','会同应急管理、市场监管部门查封作坊的亚硝酸钠，转移至防雨防渗的专用库房并登记台账。','排查村内其他水井和作坊周边地下水。']],
+['保障安全供水',['调派送水车、发放桶装水，优先保障儿童和老人。','抽干井水、清淤，修复井台和井口封盖，消毒后连续采样检测合格方可恢复使用。','不宜向井中投加氯等氧化剂"处理"后继续饮用：高浓度污染下效果难以保证，生成的硝酸盐同样有健康风险。应急期的原则是停用、替代、清洗、检测合格再启用。']],
+['信息报告',['2小时内初次报告，随后按进程报告、结案报告的程序上报。']],
+['风险沟通',['用村广播和入户告知说明原因、症状和就医途径，避免"井里有毒""有人投毒"等谣言。','提醒村民：出现嘴唇发紫、头晕心慌立即就医，不要用偏方。']]],
+notice:{title:'紧急通知',body:'村东压水井的水已查明含有亚硝酸盐，即日起停止饮用、做饭和洗漱，恢复使用另行通知。<br>今早用井水做饭、喝水后出现头晕、心慌、嘴唇或指甲发紫的，请立即到村卫生室，或拨打120。<br>临时饮用水由镇政府每天发放，发放点设在村委会。',sign:'青石村村民委员会　县疾病预防控制中心'},
+end:'末例病例发病后连续观察48小时无新发病例；涉事水井经处理后连续3次检测合格；所有患者病情稳定。',
+review:['发绀＋吸氧不缓解＋巧克力色血液，是识别亚硝酸盐中毒最有价值的组合。','亚甲蓝"小剂量治亚硝酸盐，大剂量治氰化物"，剂量用反会加重病情。','高铁血红蛋白检测要在治疗前尽早采血。','控制措施要同时覆盖"人、水、源"：救治病人、切断饮水、清除污染源。']
+});
+
+CASES.push({id:'noro',cat:'water',title:'明德中学呕吐腹泻聚集事件',type:'饮用水生物性污染',short:'寄宿学校两天内一百多名学生上吐下泻',loc:'某市明德中学（寄宿制，虚构）',time:'12月',level:'进阶',
+report:[
+{t:'12月9日 07:20',src:'明德中学校医 陈老师 → 区疾控中心',text:'从前天晚上开始，宿舍陆续有学生呕吐、拉肚子。昨天一天校医室来了六十多个，今早又来了三十多个。食堂说饭菜没问题……'}],
+scene:`<p>八点半，区疾控流调队到达学校。校医室走廊坐满了脸色发白的学生，垃圾桶边放着几只呕吐用的塑料袋。</p><p>学校共有学生2100人，其中住校生1680人。校园供水分两套：<b>A区</b>（宿舍1～3号楼、东教学楼）由地下蓄水池经二次加压供水；<b>B区</b>（宿舍4～5号楼、西教学楼、食堂）直接接市政管网。全校师生都在同一个食堂就餐。</p><p>后勤主任介绍，上周末学校对化粪池进行改造，施工队挖断过一段污水管，"当时就接上了"。蓄水池旁的二氧化氯发生器从上周四起报故障，一直没来得及修。</p>`,
+patients:[
+{name:'刘同学，男，14岁，初二，住宿舍2号楼',desc:'前晚10点下晚自习后突然喷射性呕吐4次，随后腹泻水样便3次，腹部隐痛。',vitals:[['体温','37.8℃'],['心率','96次/分'],['大便','水样，无脓血'],['精神','乏力']]},
+{name:'吴同学，女，16岁，高一，住宿舍1号楼',desc:'昨天下午腹泻5次，恶心但没有呕吐，今早已明显好转。',vitals:[['体温','37.3℃'],['心率','88次/分'],['大便','稀水样'],['精神','尚可']]},
+{name:'赵阿姨，52岁，宿管员，住2号楼值班室',desc:'昨夜呕吐2次，头痛、全身肌肉酸痛。',vitals:[['体温','37.6℃'],['心率','90次/分'],['血压','132/84 mmHg'],['精神','乏力']]}],
+q1:{q:'病原尚未明确时，校方和疾控最先应采取哪组措施？',o:[
+{t:'给全体住校生预防性服用抗生素',ok:false,fb:'病原未明，且以呕吐为主、病程短，提示病毒性胃肠炎。抗生素无效，还可能带来不良反应和耐药。'},
+{t:'隔离病例，用含氯消毒剂规范处理呕吐物和污染环境，同时暂停饮用可疑的二次供水，改用桶装水',ok:true,fb:'正确。既控制传染源和环境传播，又切断最可疑的饮水途径，体现"边调查、边控制"的原则。'},
+{t:'用75%酒精擦拭呕吐物污染的地面和门把手',ok:false,fb:'诺如病毒等无包膜病毒对酒精不敏感，应使用含氯消毒剂。'},
+{t:'先不声张，等实验室结果出来再说',ok:false,fb:'学校聚集性疫情发展快，延误控制会使续发病例增多；按规定应及时报告，并先行采取控制措施。'}]},
+judge:'学校人群聚集，2天内病例迅速增多；临床以突发呕吐（尤其喷射性呕吐）为首发，伴水样腹泻、低热，病程1～3天自愈，高度提示<b>诺如病毒感染</b>。接下来要回答的关键问题是：共同暴露是什么？食物，还是水？',
+def:'12月6日以来，明德中学师生员工中24小时内呕吐1次以上，或腹泻（排便3次以上且性状改变）者。',
+curve:{labels:['7日0时','7日6时','7日12时','7日18时','8日0时','8日6时','8日12时','8日18时','9日0时','9日6时'],counts:[1,3,6,15,24,30,35,22,12,8],mark:{i:0,label:'推测暴露起点（6日前后）'},x:'发病时间（每6小时）'},
+timeNote:'病例自12月7日出现，约36小时内迅速达到高峰，呈<b>持续同源暴露</b>的单峰曲线。按诺如病毒潜伏期12～48小时倒推，暴露起始于12月6日前后，与化粪池施工、消毒设备故障的时间吻合。后期部分病例为宿舍内人传人的续发病例。',
+place:'住校生中，A区宿舍1～3号楼（1020人）发病132例；B区宿舍4～5号楼（660人）发病9例。走读生420人发病15例，多为在东教学楼（A区）直饮水机接水的学生。',
+ar:[
+{title:'按住宿区域（住校生）',groups:[{label:'A区宿舍（蓄水池二次供水）',cases:132,total:1020},{label:'B区宿舍（市政管网直供）',cases:9,total:660}]},
+{title:'按12月6—7日是否在食堂就餐（全体学生）',groups:[{label:'在食堂就餐',cases:148,total:1980},{label:'未在食堂就餐',cases:8,total:120}]}],
+person:'学生病例156例，教职工4例。各年级均有病例，男女罹患率无明显差异。4名教职工均为住在2号楼值班室的宿管员，或常在东教学楼办公的教师。',
+suspects:[
+{n:'诺如病毒，经污染的二次供水传播',ok:true,why:'呕吐为主、病程短、潜伏期12～48小时；病例分布与A区供水范围高度一致（RR约9），与食堂就餐无关（RR约1.1），符合诺如病毒水型暴发。'},
+{n:'食堂食物中毒（金黄色葡萄球菌肠毒素）',ok:false,why:'葡萄球菌肠毒素潜伏期1～6小时，病例应集中在某一餐次之后；本次在不在食堂就餐的学生罹患率几乎相同（RR约1.1）。'},
+{n:'细菌性痢疾',ok:false,why:'菌痢多有明显发热、里急后重和黏液脓血便；本次为水样便、低热、病程短。'},
+{n:'霍乱',ok:false,why:'霍乱以无痛性米泔水样腹泻为主，常先泻后吐、一般不发热；本次以喷射性呕吐首发，且多有腹痛和低热。'},
+{n:'亚硝酸盐中毒',ok:false,why:'化学性中毒潜伏期以分钟至小时计，应有发绀，也不会出现宿舍内的续发病例。'},
+{n:'甲型肝炎',ok:false,why:'甲肝潜伏期15～45天，以乏力、厌油、黄疸为主，不会在几天内引起急性吐泻暴发。'}],
+samples:[
+{n:'病例肛拭子或粪便（选取发病48小时内的病例）',need:true,why:'用于诺如病毒RT-PCR检测，发病早期排毒量最高。'},
+{n:'病例呕吐物',need:true,why:'可检出病毒，同时提示环境传播风险。'},
+{n:'A区蓄水池水及A区末梢水（宿舍、东教学楼直饮水机）',need:true,why:'检测微生物指标和消毒剂余量，并大体积浓缩后检测诺如病毒。'},
+{n:'B区末梢水（对照）',need:true,why:'对照样本，帮助确认污染范围。'},
+{n:'化粪池及断裂污水管周边积水',need:true,why:'寻找污染来源，与水样中病毒的基因型比对。'},
+{n:'食堂留样食品、食堂从业人员肛拭子',need:true,why:'流行病学证据虽不支持食源性，仍需检测以排除。'},
+{n:'病例血培养',need:false,why:'病毒性胃肠炎不需要做血培养。'},
+{n:'病例血清胆碱酯酶',need:false,why:'无农药接触史和相应症状，不是必要项目。'}],
+results:`<table><tr><th>样本</th><th>检测项目</th><th>结果</th><th>判定</th></tr>
+<tr><td>病例肛拭子</td><td>诺如病毒核酸</td><td>24份中19份阳性（GII型）</td><td>阳性率79%</td></tr>
+<tr><td>呕吐物</td><td>诺如病毒核酸</td><td>6份中5份阳性（GII型）</td><td>阳性</td></tr>
+<tr><td>A区蓄水池水</td><td>菌落总数</td><td>1200 CFU/mL</td><td>超标（≤100 CFU/mL）</td></tr>
+<tr><td>A区蓄水池水</td><td>总大肠菌群、大肠埃希菌</td><td>均检出</td><td>不合格（不得检出）</td></tr>
+<tr><td>A区末梢水</td><td>二氧化氯余量</td><td>未检出</td><td>不合格（≥0.02 mg/L）</td></tr>
+<tr><td>A区蓄水池水（浓缩）</td><td>诺如病毒核酸</td><td>GII型阳性，与病例序列一致</td><td>阳性</td></tr>
+<tr><td>化粪池周边积水</td><td>诺如病毒核酸</td><td>GII型阳性</td><td>阳性</td></tr>
+<tr><td>B区末梢水</td><td>微生物指标、余量</td><td>符合标准</td><td>合格</td></tr>
+<tr><td>食堂留样、从业人员肛拭子</td><td>致病菌、诺如病毒</td><td>未检出</td><td>阴性</td></tr></table>`,
+resultNote:'病例、呕吐物和环境（蓄水池、化粪池）中检出同一基因型诺如病毒，蓄水池水微生物指标严重超标且没有消毒剂余量。推断：化粪池施工挖断的污水管修复不严，污水渗入相邻的地下蓄水池；同期二氧化氯发生器故障，水未经消毒。A区师生饮用后感染，随后宿舍内经呕吐物气溶胶和接触发生续发传播。',
+conclusion:'明德中学诺如病毒（GII型）水型暴发疫情。共发病160例（学生156例、教职工4例），无重症和死亡。',
+q2:{q:'患病学生症状消失后，最早何时可以返校复课？',o:[
+{t:'症状消失后立即返校',ok:false,fb:'症状消失后仍会排出病毒，过早返校可导致续发传播。'},
+{t:'症状消失后24小时',ok:false,fb:'时间不足。'},
+{t:'症状消失后72小时',ok:true,fb:'正确。诺如病毒病例应隔离至症状消失后72小时方可复课、复工。'},
+{t:'粪便培养连续2次阴性后',ok:false,fb:'这是细菌性痢疾、霍乱等细菌性肠道传染病的解除隔离标准，诺如病毒不做细菌培养。'}]},
+actions:[
+['控制传染源',['病例居家或集中隔离，症状消失后72小时方可返校。','食堂、直饮水管理等岗位人员如发病，症状消失后72小时方可返岗。']],
+['切断传播途径',['立即停用A区蓄水池，A区改由市政管网临时直供，期间发放桶装水。','修复断裂污水管，在化粪池与蓄水池之间增设防渗隔离；蓄水池排空、清洗，用含氯消毒剂浸泡消毒，检测合格后恢复使用。','维修二氧化氯发生器，建立每日余量检测记录。','呕吐物先用含有效氯5000～10000 mg/L的消毒液覆盖作用30分钟后再清理；物体表面用1000 mg/L含氯消毒剂擦拭。处理人员戴口罩、手套。']],
+['保护易感人群',['强化晨午检和因病缺勤追踪，发现病例立即隔离。','开展手卫生宣教：流动水加肥皂洗手至少20秒，含醇免洗洗手液不能替代。','暂停大型集体活动。']],
+['信息报告',['1周内同一学校发生20例及以上感染性腹泻，达到突发公共卫生事件相关信息报告标准，应在2小时内报告，并按程序报送进程和结案报告。']],
+['风险沟通',['向家长发送告知书，说明病因、症状、复课要求和家庭消毒方法，避免恐慌。']]],
+notice:{title:'致家长的一封信',body:'近日我校部分学生出现呕吐、腹泻，经疾控中心检测，确认为诺如病毒感染。诺如病毒感染病程一般1～3天，绝大多数可自愈。<br>学校已停用相关供水设施并全面消毒。请您：孩子出现呕吐、腹泻时居家休息，症状消失满72小时后再返校；家中处理呕吐物请使用含氯消毒剂；督促孩子用流动水和肥皂勤洗手。',sign:'明德中学　区疾病预防控制中心'},
+end:'最后一例病例发病后连续72小时无新发病例，且供水检测合格。',
+review:['用"分组罹患率＋相对危险度"区分食源性与水源性，是校园腹泻暴发溯源的核心方法。','诺如病毒的三个关键数字：潜伏期12～48小时，病程1～3天，症状消失后隔离72小时。','二次供水"施工破损＋消毒失效"是常见隐患，应纳入日常卫生监督。','诺如病毒消毒用含氯消毒剂，酒精效果差。']
+});
+
+CASES.push({id:'h2s',cat:'air',title:'城南路窨井作业中毒事故',type:'有限空间化学性有害气体',short:'三名工人先后下井，一个接一个倒下',loc:'某市城南路与新民街交叉口（虚构）',time:'7月，午后',level:'进阶',
+report:[
+{t:'14:26',src:'市120调度中心',text:'报警人称城南路路口窨井旁"人一个接一个掉下去了"，井下至少两人，井口一人倒挂在梯子上。'},
+{t:'14:40',src:'消防、120到场',text:'消防员佩戴正压式空气呼吸器下井救援。'},
+{t:'15:05',src:'市卫健委 → 市疾控、职业病防治院',text:'通知专业人员赶赴现场，开展医学救援和事故调查。'}],
+scene:`<p>当天气温34℃。市政养护公司的三名工人负责疏通一处堵塞的污水窨井，井深约4米。</p><p>14点10分，工人老马没有做气体检测，也没有戴任何防护用品，沿着爬梯下井清掏淤泥。两分钟后，井下传来一声闷响。在地面的小李趴到井口喊了几声没有回应，立刻下井去救人，刚下到一半就松手跌了下去。带班的王队长在腰上系了一根绳子跟着下井，下到井口下约1米处就倒挂在了爬梯上。</p><p>一位路过的外卖员闻到"一股臭鸡蛋味"，凑近井口时眼睛一阵刺痛，赶紧后退报警。他后来回忆："奇怪的是，过了一会儿就闻不到那股臭味了。"</p>`,
+patients:[
+{name:'马某，男，51岁（第一个下井）',desc:'从井底淤泥中救出时心跳呼吸已停止，现场心肺复苏后送医，抢救无效死亡。',vitals:[['意识','无'],['心跳呼吸','停止'],['瞳孔','散大'],['皮肤','发绀']]},
+{name:'李某，男，26岁（第二个下井）',desc:'昏迷，口唇发绀，双肺满布湿啰音，口鼻有粉红色泡沫痰。',vitals:[['意识','昏迷，GCS 6分'],['呼吸','32次/分'],['血氧饱和度','82%'],['胸部','肺水肿征象']]},
+{name:'王某，男，45岁（井口下约1米）',desc:'意识模糊，剧烈咳嗽，双眼结膜充血、畏光流泪。',vitals:[['意识','模糊'],['呼吸','26次/分'],['血氧饱和度','91%'],['眼部','结膜充血、角膜上皮点状脱落']]},
+{name:'胡某，男，23岁，外卖员（井口旁停留约1分钟）',desc:'眼刺痛、流泪、咽痛，意识清楚。',vitals:[['意识','清楚'],['呼吸','18次/分'],['血氧饱和度','98%'],['眼部','结膜轻度充血']]}],
+q1:{q:'消防员到场时井下仍有人员。最正确的救援方式是？',o:[
+{t:'争分夺秒，立即下井把人拉上来',ok:false,fb:'这正是前两名施救者倒下的原因。有限空间事故中，盲目施救者的伤亡常常多于最初遇险者。'},
+{t:'用湿毛巾捂住口鼻后下井',ok:false,fb:'湿毛巾无法阻挡高浓度有毒气体，也解决不了缺氧问题。'},
+{t:'佩戴正压式空气呼吸器、系安全绳，在地面有人监护的情况下下井施救；同时机械通风、检测气体',ok:true,fb:'正确。供气式呼吸防护＋安全绳＋监护，是有限空间救援的基本条件；通风和检测要同步进行。'},
+{t:'先向井内大量喷水降低气体浓度，再下井',ok:false,fb:'喷水不能有效降低井内有毒气体浓度，反而会延误救援，还可能搅动淤泥释放更多气体。'}]},
+judge:'有限空间（污水窨井）＋臭鸡蛋味＋嗅觉很快"失灵"＋进入者在数分钟内接连倒下＋眼和呼吸道刺激，高度怀疑<b>高浓度硫化氢中毒</b>。还要注意：有限空间内常同时存在缺氧、可燃气体等多种危害，需要现场检测确认。',
+def:'7月X日14时至16时，在城南路窨井现场及周边出现眼刺激、呼吸道刺激、头晕、意识障碍之一者。',
+timeline:[['14:10','马某未检测、未防护下井清淤'],['14:12','井下传出闷响，马某倒在井底淤泥中'],['14:14','李某下井施救，下到约2.5米处跌落'],['14:18','王某系绳下井，在井口下约1米处倒挂于爬梯'],['14:22','外卖员胡某靠近井口，眼刺痛后撤离并报警'],['14:40','消防、120到场，佩戴空气呼吸器施救，同时开始强制通风'],['14:48','救出井口附近的王某和井中段的李某'],['15:20','从井底淤泥中救出马某']],
+timeNote:'三人在约10分钟内先后倒下。病例集中在极短时间内，并且只发生在进入或靠近井口的人身上，说明危害局限于井内空间。',
+place:`<div class="tbl-wrap"><table><tr><th>人员</th><th>所在位置</th><th>停留时间</th><th>结局</th></tr>
+<tr><td>马某</td><td>井底淤泥中（约4米）</td><td>10分钟以上</td><td>死亡</td></tr>
+<tr><td>李某</td><td>井下约2.5米处跌落</td><td>约35分钟</td><td>昏迷、肺水肿</td></tr>
+<tr><td>王某</td><td>井口下约1米</td><td>约30分钟</td><td>意识模糊、角结膜炎</td></tr>
+<tr><td>胡某</td><td>井口旁地面</td><td>约1分钟</td><td>眼和咽部刺激</td></tr>
+<tr><td>周边行人</td><td>距井口5米以外</td><td>—</td><td>未诉不适</td></tr></table></div><p>越深、停留越久，病情越重。这种<b>"暴露位置—严重程度"梯度</b>，在小规模急性中毒中可以替代罹患率，作为暴露分析的证据。</p>`,
+ar:[],
+person:'受害者都是进入或靠近井口的人，与年龄、性别无关，暴露距离和时间决定病情轻重。',
+suspects:[
+{n:'硫化氢',ok:true,why:'臭鸡蛋味、嗅觉疲劳、眼刺激、有限空间内接连倒下和"电击样"死亡，均为硫化氢中毒的典型特征；污水淤泥中有机物厌氧分解是其来源。'},
+{n:'单纯缺氧窒息（甲烷、二氧化碳积聚）',ok:false,why:'甲烷等单纯窒息性气体没有刺激性，不会引起眼刺痛和咽痛，也没有臭鸡蛋味。井下确实可能缺氧，但不能解释全部表现。'},
+{n:'一氧化碳',ok:false,why:'井下没有燃烧源；CO无色无味，不引起眼和呼吸道刺激。'},
+{n:'氯气',ok:false,why:'氯气呈黄绿色，有刺激性氯味，现场没有氯气来源。'},
+{n:'氨气',ok:false,why:'氨有强烈刺鼻气味，且比空气轻、易向上扩散，难以在井底积聚到致死浓度；现场没有氨源。'}],
+samples:[
+{n:'现场多参数气体检测（氧气、硫化氢、CO、可燃气体），分层检测井口、井下1米、2米和井底',need:true,why:'有限空间事故最关键的证据。必须尽快测量，通风后浓度会迅速下降。'},
+{n:'井底淤泥和污水',need:true,why:'确认硫化氢来源（含硫有机物厌氧分解）。'},
+{n:'患者血气分析、心肌酶、胸部影像',need:true,why:'评估缺氧、心肌损害和肺水肿程度，指导救治。'},
+{n:'尽早采集患者血样检测硫化物',need:true,why:'硫化物在体内代谢快，必须尽早采样。'},
+{n:'死者心血和肺组织（法医检验）',need:true,why:'明确死因。'},
+{n:'患者粪便培养',need:false,why:'与本次事故无关。'},
+{n:'患者全血胆碱酯酶',need:false,why:'无农药接触史，不是必要项目。'}],
+results:`<table><tr><th>采样位置或样本</th><th>检测项目</th><th>结果</th><th>判定</th></tr>
+<tr><td>井口（地面）</td><td>硫化氢</td><td>42 mg/m³</td><td>超过最高容许浓度4倍</td></tr>
+<tr><td>井下1米</td><td>硫化氢</td><td>680 mg/m³</td><td>可迅速致意识丧失</td></tr>
+<tr><td>井底附近</td><td>硫化氢</td><td>超过1500 mg/m³（超出仪器量程）</td><td>可致"电击样"死亡</td></tr>
+<tr><td>井底附近</td><td>氧气</td><td>17.2%</td><td>缺氧（低于19.5%）</td></tr>
+<tr><td>井底附近</td><td>CO、可燃气体</td><td>2 mg/m³、6% LEL</td><td>未见明显异常</td></tr>
+<tr><td>井底淤泥</td><td>硫化物</td><td>含量高</td><td>硫化氢释放源</td></tr>
+<tr><td>李某血样</td><td>硫化物</td><td>检出</td><td>支持硫化氢中毒</td></tr>
+<tr><td>死者</td><td>法医检验</td><td>心血检出硫化物，肺水肿</td><td>符合硫化氢中毒死亡</td></tr></table><p class="small muted">工作场所硫化氢最高容许浓度（MAC）为10 mg/m³。</p>`,
+resultNote:'井内硫化氢浓度自上而下急剧升高，井底远超致死浓度，同时存在缺氧，这是典型的有限空间"有毒气体＋缺氧"复合危害。清淤作业搅动淤泥，使大量积存的硫化氢瞬间释放。',
+conclusion:'城南路污水窨井有限空间作业急性硫化氢中毒事故。违规作业（未通风、未检测、无防护、无监护）和盲目施救，导致1人死亡、1人重度中毒、1人中度中毒、1人轻度刺激反应。',
+q2:{q:'王某脱离现场后症状好转、意识转清。他最少应留院观察多长时间？',o:[
+{t:'不需要，症状好转即可回家',ok:false,fb:'硫化氢中毒可出现迟发性肺水肿，过早离院有风险。'},
+{t:'2小时',ok:false,fb:'观察时间不足。'},
+{t:'24～48小时',ok:true,fb:'正确。刺激性气体中毒后，肺水肿可在数小时至48小时内迟发出现，应留观并复查胸部影像。'},
+{t:'2周',ok:false,fb:'无需住院如此之久，但出院后应随访神经系统和心肌情况。'}]},
+actions:[
+['现场控制',['设置警戒区，禁止无防护人员靠近井口。','持续机械通风并实时监测，浓度降至安全范围前不得恢复作业。']],
+['医疗救治',['脱离现场后立即吸氧；心跳呼吸骤停者就地心肺复苏，施救者避免口对口人工呼吸。','中、重度中毒者尽早高压氧治疗。','积极防治肺水肿和脑水肿，监测心肌损害。','轻症者至少留观24～48小时，警惕迟发性肺水肿。']],
+['报告与调查',['作为生产安全事故，同步报告应急管理部门；卫生健康部门负责医学救援和职业中毒诊断。','核查作业审批、气体检测记录和防护装备配备情况。']],
+['预防同类事件',['严格执行"先通风、再检测、后作业"，作业中持续检测。','配备正压式空气呼吸器、安全带和救援三脚架，设专人在井口监护。','开展"不要盲目施救"警示教育：未经防护不要下井救人，先报警、先通风。','夏季高温季节，对化粪池、沼气池、腌制池等有限空间开展专项排查和宣传。']]],
+notice:{title:'安全提示',body:'下水道、化粪池、窨井、沼气池、地窖等地方可能积聚硫化氢等有毒气体。<br>闻到臭鸡蛋味要立即远离；闻不到气味不等于安全，高浓度硫化氢会让人"闻不到"。<br>看到有人在井下倒下，<b>不要贸然下去救人</b>，立即拨打119和120，等待专业救援。',sign:'市卫生健康委员会　市应急管理局'},
+end:'伤员病情稳定；现场危害消除并经检测确认；事故调查报告完成。',
+review:['臭鸡蛋味消失不等于安全，高浓度硫化氢会麻痹嗅觉。','有限空间事故中，施救者伤亡往往多于最初遇险者。','分层气体检测要尽早进行，通风后浓度迅速下降，证据会消失。','小规模急性中毒可用"位置—严重程度"梯度代替罹患率进行暴露分析。']
+});
+
+CASES.push({id:'legion',cat:'air',title:'滨江酒店会议后肺炎聚集',type:'大气生物性污染',short:'行业年会散场后，八人相继患上重症肺炎',loc:'某市滨江酒店（虚构）',time:'8月',level:'挑战',
+report:[
+{t:'8月21日 16:00',src:'市人民医院感染科 孙主任 → 市疾控中心',text:'这周我们收治了5例重症社区获得性肺炎，有3例住过滨江酒店、参加过本月11—13日在那里开的行业年会。头孢用了三天都没效果，已经有两个进了ICU。'}],
+scene:`<p>市疾控通过全市哨点医院回溯搜索，又发现了3例近两周入住或到访过滨江酒店的肺炎病例。其中1例是酒店对面便利店的店员，从来没有进过酒店。</p><p>年会共有412人参加，大部分住在酒店8～12层。酒店楼顶有两台开式冷却塔，8月以来持续高温，冷却塔一直满负荷运行；物业记录显示，冷却塔上一次清洗消毒是在4月。楼顶新风机组的取风口距冷却塔只有约8米，负责8～12层客房和二楼会议厅的新风供应。</p>`,
+patients:[
+{name:'钱先生，58岁，参会者',desc:'吸烟30年，有2型糖尿病。8月16日起高热、干咳，第3天出现腹泻、反应淡漠。',vitals:[['体温','39.8℃'],['心率','92次/分（相对缓脉）'],['血钠','126 mmol/L'],['胸部CT','右下肺实变']]},
+{name:'黄女士，47岁，参会者',desc:'发热、肌痛、头痛，咳少量黏痰带血丝。头孢曲松治疗3天无效。',vitals:[['体温','39.2℃'],['心率','96次/分'],['血钠','131 mmol/L'],['胸部CT','左肺斑片影']]},
+{name:'小郑，22岁，酒店对面便利店店员',desc:'没有基础病，发热、干咳，症状较轻，在门诊治疗。',vitals:[['体温','38.6℃'],['心率','90次/分'],['血钠','正常'],['胸部CT','右肺小片影']]}],
+q1:{q:'等待病原学结果期间，经验性抗感染方案最应包括？',o:[
+{t:'继续使用头孢类，并加大剂量',ok:false,fb:'β-内酰胺类难以进入细胞内，对军团菌等胞内菌效果差。"头孢无效的肺炎"本身就是重要提示。'},
+{t:'阿奇霉素或左氧氟沙星',ok:true,fb:'正确。大环内酯类和喹诺酮类能进入细胞内，是军团菌肺炎的首选药物。'},
+{t:'奥司他韦',ok:false,fb:'抗流感病毒药物对细菌性肺炎无效，流感也需要病原学证据支持。'},
+{t:'先停用抗菌药，观察病情变化',ok:false,fb:'重症肺炎不能停药观察，应及时调整为覆盖非典型病原体的方案。'}]},
+judge:'同一场所关联的肺炎聚集＋高热、相对缓脉、腹泻、低钠血症、意识改变＋β-内酰胺类治疗无效＋中老年吸烟者病情重＋酒店有开式冷却塔，首先考虑<b>军团菌病</b>。',
+def:'8月1日以来，入住或到访滨江酒店，或在其周边500米内工作、居住，出现发热（≥38℃）并经影像学证实肺炎者。',
+curve:{labels:['8/12','8/13','8/14','8/15','8/16','8/17','8/18','8/19','8/20','8/21'],counts:[0,0,1,1,2,1,1,1,1,0],mark:{i:0,label:'年会（8/11—13）'},x:'发病日期'},
+timeNote:'病例分布在会议后2～9天，与军团菌潜伏期（2～10天）吻合。曲线平缓、分散，家属和同事中没有出现续发病例，提示<b>共同环境来源而非人传人</b>。',
+place:'7例参会病例中，6例住在8～12层；另1例住在5层，但会议期间每天在二楼会议厅超过8小时。第8例是酒店对面便利店的店员，便利店位于冷却塔下风向约60米处。',
+ar:[{title:'参会者按住宿楼层',groups:[{label:'住8～12层',cases:6,total:180},{label:'住其他楼层或未住宿',cases:1,total:232}]}],
+person:'病例年龄22～71岁，男6例、女2例；吸烟者5例，有糖尿病、慢阻肺等基础病者4例。入住ICU的2例均为55岁以上的吸烟男性。',
+suspects:[
+{n:'嗜肺军团菌',ok:true,why:'与集中空调冷却塔相关的场所聚集、潜伏期2～10天、典型肺外表现、β-内酰胺类无效、不人传人，均支持军团菌病。'},
+{n:'流感病毒',ok:false,why:'流感潜伏期1～4天，可以人传人，家属和同事中应出现续发病例；本次没有续发，病例鼻咽拭子流感核酸均为阴性。'},
+{n:'肺炎链球菌',ok:false,why:'肺炎链球菌肺炎多为散发，对β-内酰胺类敏感，一般不会因同一建筑形成聚集。'},
+{n:'甲醛等装修污染',ok:false,why:'化学性刺激引起眼和呼吸道刺激，不会导致高热和肺实变，也没有数天的潜伏期。'},
+{n:'花粉',ok:false,why:'花粉引起过敏性鼻炎和哮喘，不引起发热性肺炎。'}],
+samples:[
+{n:'病例尿液（军团菌尿抗原检测）',need:true,why:'快速、无创，可检测嗜肺军团菌血清1型。'},
+{n:'病例下呼吸道标本（痰、肺泡灌洗液）培养和核酸检测',need:true,why:'培养是金标准，获得菌株才能与环境菌株比对。'},
+{n:'病例急性期和恢复期双份血清',need:true,why:'抗体4倍以上升高可回顾性确诊。'},
+{n:'冷却塔水和集水盘生物膜',need:true,why:'最可疑的污染源。'},
+{n:'新风机组冷凝水、过滤网',need:true,why:'判断含菌气溶胶是否经新风系统进入室内。'},
+{n:'8～12层客房淋浴喷头水及软管内壁拭子（抽样）',need:true,why:'热水系统是军团菌的另一常见来源，需一并排查。'},
+{n:'会议厅室内空气甲醛检测',need:false,why:'与临床表现不符，不是溯源重点。'},
+{n:'病例粪便培养',need:false,why:'腹泻是军团菌病的全身表现，粪便培养对诊断没有帮助。'}],
+results:`<table><tr><th>样本</th><th>结果</th><th>判定</th></tr>
+<tr><td>病例尿抗原</td><td>8例中6例阳性</td><td>支持嗜肺军团菌血清1型感染</td></tr>
+<tr><td>病例痰培养</td><td>分离出3株嗜肺军团菌血清1型（Lp1）</td><td>确诊</td></tr>
+<tr><td>冷却塔水</td><td>Lp1，3.5×10³ CFU/L</td><td>不合格（集中空调冷却水不得检出嗜肺军团菌）</td></tr>
+<tr><td>新风机组冷凝水</td><td>检出Lp1</td><td>阳性</td></tr>
+<tr><td>客房淋浴水</td><td>12份中2份检出嗜肺军团菌血清6型（Lp6）</td><td>阳性</td></tr>
+<tr><td>全基因组测序比对</td><td>冷却塔株、冷凝水株与3株病例株遗传关系高度一致；淋浴Lp6株与病例株不同</td><td>冷却塔为本次暴发来源</td></tr></table>`,
+resultNote:'冷却塔是本次暴发的源头：含菌气溶胶一方面随风飘向下风向（便利店店员），另一方面被近距离的新风取风口吸入，送进8～12层客房和会议厅。淋浴水虽然也检出军团菌，但血清型不同，不是本次病例的来源。<b>环境中检出不等于找到了源头，必须通过分型比对才能确认因果。</b>',
+conclusion:'滨江酒店冷却塔嗜肺军团菌（Lp1）污染所致的军团菌病暴发。共8例，重症2例，经阿奇霉素、左氧氟沙星等治疗全部好转。',
+q2:{q:'下列哪一项不是本次事件的必要措施？',o:[
+{t:'停用冷却塔，清洗消毒，复测合格后再启用',ok:false,fb:'这是控制污染源的核心措施，必须执行。'},
+{t:'对病例的密切接触者实施14天医学观察',ok:true,fb:'正确。军团菌病一般不人传人，接触者不需要医学观察，病例也不需要隔离。'},
+{t:'通知近期入住的宾客，出现发热咳嗽时就医并告知入住史',ok:false,fb:'这是主动病例搜索，有助于发现和及时治疗病例。'},
+{t:'同步整治热水系统，保持储水温度60℃以上',ok:false,fb:'淋浴水检出军团菌，虽不是本次病例来源，也存在风险，需要整治。'}]},
+actions:[
+['控制污染源',['立即停用冷却塔，排空后清洗集水盘和填料，用含氯消毒剂冲击消毒。','将新风取风口移位，远离冷却塔排风方向。','同步整治热水系统：储水温度不低于60℃，末端出水不低于50℃，定期高温冲洗淋浴喷头。','消毒后连续采样检测嗜肺军团菌阴性，经卫生学评价合格方可重新启用。']],
+['病例搜索与救治',['调取年会签到和住宿登记，通过短信、电话提醒8月1日以来的入住者：如出现发热咳嗽，请就医并告知入住史。','提醒全市医疗机构：对头孢类治疗无效的社区获得性肺炎，询问旅馆住宿史并开展尿抗原检测。']],
+['人群防护',['向公众说明军团菌病一般不人传人：病例不需要隔离，接触者不需医学观察，避免不必要的恐慌。','建议老年人、吸烟者和慢性病患者在整治完成前避免到访相关区域。']],
+['长效管理',['将冷却塔清洗消毒和军团菌检测纳入公共场所集中空调通风系统的日常卫生监督。','建立高温季节冷却水定期检测制度。']]],
+notice:{title:'致近期入住宾客的健康提示',body:'尊敬的宾客：您曾于8月1日以来入住或到访滨江酒店。酒店空调冷却系统近期检出军团菌，目前已停用整治。<br>如您出现发热、咳嗽、胸闷等症状，请及时就医，并告诉医生您的入住经历。军团菌病一般不会人传人，您的家人无需隔离。',sign:'市疾病预防控制中心　滨江酒店'},
+end:'污染源消除且复测阴性；末例病例发病后观察两个最长潜伏期（20天）无新病例。',
+review:['"头孢无效的肺炎＋同一场所聚集"是军团菌病的报警信号。','尿抗原快但只查Lp1；培养获得菌株才能做溯源比对。','环境检出不等于找到源头，要用分子分型建立"环境—病例"的联系。','军团菌病不人传人，控制重点在水系统而不在隔离病人。']
+});
+
+CASES.push({id:'ir192',cat:'rad',title:'工地上捡到的"金属零件"',type:'放射源失控辐射事故',short:'两条看似无关的报告，指向同一枚丢失的放射源',loc:'某市经开区管道工地及城中村（虚构）',time:'4月',level:'挑战',
+report:[
+{t:'4月18日 07:40',src:'某探伤公司安全员 → 市生态环境局、公安局',text:'15日晚上在经开区管道工地做γ射线探伤，今早开工前用巡测仪检查源容器，发现铱-192源不在里面！可能是那晚收源时源辫脱落了。16、17日下雨停工，我们没检查……工地已经找了一遍，没找到。'},
+{t:'4月18日 10:15',src:'市第一医院皮肤科 → 医务科',text:'一名45岁男性，右大腿前侧一大片红斑，今天起了水疱，像烫伤，但本人说没碰过热东西。前天开始恶心呕吐、没胃口，血常规白细胞偏低。'}],
+scene:`<p>市卫健委应急办在协调会上把这两条信息放在了一起：皮肤科的患者赵某，正是那个管道工地的临时工。</p><p>追问病史得知，4月16日早上7点半，赵某在管沟边捡到一个"带链子的亮闪闪金属小零件"，觉得像铜做的，"能卖钱"，随手揣进了右边裤兜。9点40分，他把它放进挂在工棚里的帆布工具包。中午在工棚休息时，他拿出来给工友孙某看过，孙某用手指捏起来看了几秒。下班后，他把工具包带回城中村的出租屋，放在门口的鞋柜上，离床大约3米。</p><p>屋里还住着他的妻子和10岁的儿子。16日下午他就开始恶心，以为是中暑。</p>`,
+patients:[
+{name:'赵某，男，45岁，工地临时工',desc:'4月16日下午起恶心、呕吐3次，乏力、食欲差。4月18日右大腿前侧可见约10×12 cm红斑，中央出现水疱，部位与右裤兜位置一致。',vitals:[['白细胞','3.1×10⁹/L'],['淋巴细胞','0.45×10⁹/L'],['体温','37.6℃'],['血小板','正常']]},
+{name:'赵某之妻，41岁',desc:'与赵某同住，夜间睡在床的另一侧。轻度乏力，没有呕吐。',vitals:[['白细胞','5.2×10⁹/L'],['淋巴细胞','1.5×10⁹/L'],['体温','36.8℃'],['皮肤','无异常']]},
+{name:'赵某之子，10岁',desc:'睡在隔壁小房间，与鞋柜隔一道墙。无不适。',vitals:[['白细胞','6.8×10⁹/L'],['淋巴细胞','2.6×10⁹/L'],['体温','36.6℃'],['皮肤','无异常']]},
+{name:'工友孙某，38岁',desc:'中午用手指捏起"零件"看了几秒。右手拇指、食指目前无异常。',vitals:[['白细胞','6.1×10⁹/L'],['淋巴细胞','1.9×10⁹/L'],['手部皮肤','暂无异常，需随访'],['自觉症状','无']]}],
+q1:{q:'怀疑放射源就在赵某的出租屋里。现场首先应怎么做？',o:[
+{t:'马上派人进屋，把放射源找出来带走',ok:false,fb:'未经剂量监测、徒手进入，会造成新的受照。放射源必须由专业人员在巡测仪引导下，用长柄工具放入铅罐回收。'},
+{t:'立即给全家人服用碘化钾',ok:false,fb:'稳定碘只对放射性碘内照射有效。铱-192密封源外照射时，人体没有摄入放射性碘，服碘没有意义。'},
+{t:'在辐射巡测仪引导下划定警戒区、疏散人员，由专业队伍按"时间、距离、屏蔽"原则回收源；受照人员送专业医疗机构',ok:true,fb:'正确。先控制源、隔离现场、保护人员，再由专业队伍安全回收。'},
+{t:'用大量清水冲洗赵某全身去污',ok:false,fb:'密封源包壳完整时，外照射不会造成放射性污染，人体本身不带放射性，全身冲洗没有意义（仍需监测确认源未破损）。'}]},
+judge:'没有热源接触史的"烫伤样"皮损＋早期恶心呕吐＋淋巴细胞明显下降＋拾到"金属零件"的经历＋同期放射源丢失报告，强烈提示<b>放射源外照射所致的急性放射损伤</b>。',
+def:'与丢失的铱-192源有过近距离接触或同处一室的人员，均列为受照人员，进行剂量估算和医学检查。',
+timeline:[['4/15 23:30','探伤作业结束，收源后未按规程用巡测仪确认，源辫脱落在管沟边'],['4/16 07:30','赵某捡到"金属零件"，放进右裤兜（约2小时）'],['4/16 09:40','放进工棚里的帆布工具包'],['4/16 12:00','午休时拿给工友孙某看，孙某用手指捏起数秒；另有5名工友在2～4米外休息约1小时'],['4/16 15:00','赵某恶心、呕吐'],['4/16 18:30','工具包带回出租屋，放在门口鞋柜上，距床约3米'],['4/17 全天','下雨停工，赵某一家在家'],['4/18 07:40','探伤公司发现源丢失并报告'],['4/18 10:15','医院报告可疑病例'],['4/18 13:20','专业人员在出租屋外测到异常剂量率，定位并回收放射源']],
+timeNote:'把"源在哪里"和"人在哪里"的时间线叠在一起，就能确定谁受到了照射、照射了多久。这是辐射事故中开展剂量估算的基础。',
+place:`<div class="tbl-wrap"><table><tr><th>受照人员</th><th>与源的位置关系</th><th>估算接触时间</th><th>目前表现</th></tr>
+<tr><td>赵某</td><td>贴身装在裤兜内；夜间距床约3米</td><td>贴身约2小时；同室约40小时</td><td>呕吐、红斑水疱、淋巴细胞明显下降</td></tr>
+<tr><td>妻子</td><td>同室，距源约3.5米</td><td>约35小时</td><td>轻度乏力</td></tr>
+<tr><td>儿子</td><td>隔墙，距源约4米</td><td>约35小时</td><td>无症状</td></tr>
+<tr><td>工友孙某</td><td>手指直接接触</td><td>数秒</td><td>暂无症状，手部需随访</td></tr>
+<tr><td>工棚5名工友</td><td>距工具包2～4米</td><td>约1小时</td><td>无症状</td></tr></table></div><p>外照射剂量率与距离的平方成反比、与时间成正比。贴身携带的赵某受照最重，而且右大腿的局部剂量远远高于全身剂量。</p>`,
+ar:[],
+person:'受照者的剂量取决于与源的距离和接触时间，与年龄、性别无关；但儿童对辐射更敏感，需要重点随访。',
+suspects:[
+{n:'密封放射源外照射（全身＋局部）',ok:true,why:'有明确的拾源、携带史；皮损部位与裤兜位置吻合；早期胃肠症状和淋巴细胞下降符合骨髓型急性放射病早期表现。'},
+{n:'放射性污染（体表或环境沾染）',ok:false,why:'源包壳完整时不会造成放射性污染；回收后的擦拭检测和体表污染监测均未发现污染。'},
+{n:'内照射',ok:false,why:'没有放射性物质摄入途径，尿样核素分析阴性。'},
+{n:'化学性皮肤灼伤',ok:false,why:'没有化学品接触史；化学灼伤也不会引起恶心呕吐和淋巴细胞下降。'},
+{n:'病毒感染或药物所致骨髓抑制',ok:false,why:'不能解释局部"烫伤样"皮损，以及皮损与放射源携带部位的一致性。'}],
+samples:[
+{n:'用辐射巡测仪现场搜寻、定位放射源并测量剂量率',need:true,why:'控制源是第一要务，也为剂量重建提供数据。'},
+{n:'受照人员外周血淋巴细胞绝对数，每日动态监测',need:true,why:'受照后早期淋巴细胞下降的速度和程度，是估计剂量、判断病情的重要指标。'},
+{n:'外周血淋巴细胞染色体畸变分析（生物剂量估算）',need:true,why:'双着丝粒体加环是公认的"生物剂量计"。'},
+{n:'物理剂量重建：还原携带位置、距离和时间，模拟测量计算',need:true,why:'与生物剂量相互印证，并能估算局部剂量。'},
+{n:'回收源的擦拭检测、受照人员体表污染监测',need:true,why:'确认源未破损、没有放射性污染。'},
+{n:'全家人甲状腺碘-131测量',need:false,why:'铱-192密封源不释放放射性碘，甲状腺测量没有意义。'},
+{n:'患者呕吐物毒物检测',need:false,why:'呕吐是放射损伤的前驱症状，不是中毒。'}],
+results:`<table><tr><th>项目</th><th>结果</th><th>判定</th></tr>
+<tr><td>放射源</td><td>铱-192，活度约1.1×10¹² Bq（约30居里），Ⅱ类源；在鞋柜上的工具包内找到</td><td>包壳完整</td></tr>
+<tr><td>出租屋门外1米处剂量率</td><td>约15 mGy/h</td><td>远高于环境本底</td></tr>
+<tr><td>擦拭检测、体表污染监测</td><td>未检出放射性污染</td><td>源未破损</td></tr>
+<tr><td>赵某</td><td>染色体畸变估算全身剂量约2.6 Gy，物理重建约2.4 Gy；右大腿局部剂量估算超过20 Gy</td><td>中度骨髓型急性放射病；右大腿急性放射性皮肤损伤，有发展为溃疡、坏死的风险</td></tr>
+<tr><td>妻子</td><td>约0.3 Gy</td><td>低于急性放射病剂量阈值（1 Gy），医学随访</td></tr>
+<tr><td>儿子</td><td>约0.1 Gy</td><td>医学随访</td></tr>
+<tr><td>工友孙某</td><td>手指局部短时受照</td><td>观察局部皮肤反应</td></tr>
+<tr><td>工棚5名工友</td><td>每人低于0.05 Gy</td><td>告知、随访</td></tr></table>`,
+resultNote:'物理剂量与生物剂量估算结果基本一致。赵某全身剂量在2～4 Gy范围，属中度骨髓型急性放射病；局部剂量远高于全身剂量，皮肤损伤将在今后数周内进行性加重。',
+conclusion:'经开区Ⅱ类放射源（铱-192）失控辐射事故。探伤作业后未按规程确认源位，源辫脱落后被工人拾取并带回家，导致1人中度骨髓型急性放射病合并局部放射性皮肤损伤，其余受照者剂量低于急性放射病阈值。',
+q2:{q:'依据《放射性同位素与射线装置安全和防护条例》，本事件应定为？',o:[
+{t:'特别重大辐射事故',ok:false,fb:'特别重大需造成大范围严重辐射污染后果，或导致3人以上急性死亡。'},
+{t:'重大辐射事故',ok:true,fb:'正确。Ⅰ类、Ⅱ类放射源丢失、被盗、失控，即构成重大辐射事故。'},
+{t:'较大辐射事故',ok:false,fb:'较大辐射事故对应Ⅲ类放射源失控。'},
+{t:'一般辐射事故',ok:false,fb:'一般辐射事故对应Ⅳ类、Ⅴ类放射源失控。'}]},
+actions:[
+['控制放射源',['生态环境部门牵头，专业人员佩戴个人剂量计，在巡测仪引导下用长柄工具将源放入铅罐，全程遵循"时间、距离、屏蔽"原则。','回收后对出租屋、工棚、管沟复测，确认恢复到本底水平。']],
+['医学救治',['赵某转送具有放射损伤救治能力的专业机构：无菌隔离防感染，造血生长因子支持，必要时输注血液成分。','右大腿创面由专科处理。局部放射损伤往往进行性加重，可能需要手术切除和皮瓣修复。','妻子、儿子和工友按剂量分级进行医学观察和血常规随访，远期关注白内障和肿瘤风险。']],
+['公众沟通与心理支持',['向城中村居民说明：密封源已回收，没有放射性污染，房屋和物品可以正常使用，受照者不会把辐射"传染"给别人。','为受照家庭提供心理支持，防止邻里歧视。']],
+['报告与调查',['事故单位立即向生态环境、公安和卫生健康部门报告；卫生健康部门负责受照人员的医学应急处理。','追查责任：作业后未用巡测仪确认源位、停工期间未清点源容器，违反探伤作业安全规程。']],
+['预防同类事件',['探伤作业"收源必测"，源容器每日清点。','在工地、废品收购站等场所开展科普："不明金属物不捡拾，发现可疑物品立即报警。"']]],
+notice:{title:'致居民的说明',body:'4月18日，有关部门已从本村一处出租屋内安全回收一枚丢失的工业探伤用放射源。<br>该放射源为密封源，经检测没有发生泄漏，周边房屋、道路和物品<b>没有放射性污染</b>，可以正常居住和使用。受照人员已在医院接受治疗，他们身上没有放射性，不会影响他人。<br>如您发现可疑的金属物品，请不要触碰，立即拨打110报警。',sign:'市生态环境局　市卫生健康委员会'},
+end:'放射源已安全回收，现场复测达到本底水平；受照人员剂量评估完成，并纳入长期医学随访。',
+review:['没有热源接触史的"烫伤"＋恶心呕吐＋淋巴细胞下降，要想到放射损伤。','密封源外照射不等于放射性污染：不需要全身洗消，也不需要服碘片。','碘片只针对放射性碘（如核电厂事故），螯合剂只针对特定核素的内污染。','辐射事故分级首先看放射源类别：Ⅰ、Ⅱ类源失控即为重大辐射事故。']
+});
+
+</script>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const main=$('#content');
+const STEPS=['接报与救治','流行病学调查','采样与检验','控制与总结'];
+let done=new Set();
+try{done=new Set(JSON.parse(localStorage.getItem('case_done')||'[]'))}catch(e){}
+const saveDone=()=>{try{localStorage.setItem('case_done',JSON.stringify([...done]))}catch(e){}};
+const states={};
+let cur=null;
+const byId=id=>CASES.find(c=>c.id===id);
+const pct=x=>(x*100).toFixed(1)+'%';
+
+function newState(c){
+  const shuffle=n=>{const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const order=shuffle(c.samples.length),susOrder=shuffle(c.suspects.length);
+  return {susOrder,phase:1,max:1,q1:{tries:0,ok:false},q2:{tries:0,ok:false},sus:{tries:0,ok:false,wrong:[]},samp:{done:false,checked:[],score:0},order,arShown:{},finished:false};
+}
+
+/* ---------- 侧栏 ---------- */
+function buildNav(){
+  let h=`<div class="brand"><b>应急溯源模拟</b><span>突发公共卫生事件现场调查训练</span></div><div class="nav-top"><button class="nav-item${cur?'':' active'}" data-home>案件登记簿</button></div>`;
+  ['water','air','rad'].forEach(k=>{
+    const list=CASES.filter(c=>c.cat===k);if(!list.length)return;
+    h+=`<div class="nav-group"><div class="nav-title"><i style="background:${CATS[k].color}"></i>${CATS[k].name}</div>`;
+    list.forEach(c=>{h+=`<button class="case-link${cur===c.id?' active':''}" style="--c:${CATS[k].color}" data-case="${c.id}"><b>${c.title}</b><span>${c.type}${done.has(c.id)?'<em class="done" style="font-style:normal">，已结案</em>':''}</span></button>`});
+    h+='</div>';
+  });
+  h+='<div class="side-foot">案例均为教学情景，人物与地点为虚构。<br>对应课程标准：模块二 通用处置技术与能力、模块三 特定类别事件处置</div>';
+  $('#sidebar').innerHTML=h;
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-home]')){cur=null;renderWelcome();return;}
+  const c=e.target.closest('[data-case]');if(c){openCase(c.dataset.case);}
+});
+
+/* ---------- 欢迎页 ---------- */
+function renderWelcome(){
+  cur=null;buildNav();closeNav();
+  let h=`<span class="cat-tag" style="background:var(--rule2);color:var(--ink2)">现场调查训练</span><h1>突发公共卫生事件流行病学溯源模拟</h1>
+  <p class="lead">每个案例都从一通接报电话开始。你要像疾控现场调查员一样，先救人，再用三间分布排除干扰、建立假设，用实验室证据验证结论，最后制定控制措施。</p>
+  <div class="intro-grid"><div><i>1</i><b>接报与救治</b><span>读接报记录和现场情况，作出首要处置决策</span></div><div><i>2</i><b>流行病学调查</b><span>分析时间、地区、人群分布，计算罹患率，锁定致病因素</span></div><div><i>3</i><b>采样与检验</b><span>制定采样方案，解读检验报告，建立证据链</span></div><div><i>4</i><b>控制与总结</b><span>制定控制措施、报告与沟通方案，完成复盘</span></div></div>
+  <h2>案件登记簿</h2><div class="tbl-wrap"><table class="registry"><tr><th>类别</th><th>事件</th><th>要训练的能力</th><th>难度</th><th>状态</th></tr>`;
+  const skill={nitrite:'特征体征识别；点源暴露曲线；亚甲蓝用法',noro:'用罹患率区分食源性与水源性；学校疫情控制',h2s:'有限空间救援原则；分层气体检测',legion:'病例搜索；环境检出与分型比对',ir192:'放射损伤识别；剂量估算；辐射事故分级'};
+  CASES.forEach(c=>{h+=`<tr><td><span class="cat-tag cat-${c.cat}" style="margin:0">${CATS[c.cat].name}</span></td><td><button data-case="${c.id}">${c.title}</button><div class="small muted">${c.short}</div></td><td class="small">${skill[c.id]||''}</td><td><span class="lv">${c.level}</span></td><td class="small">${done.has(c.id)?'<span style="color:var(--ok);font-weight:600">已结案</span>':'待调查'}</td></tr>`});
+  h+=`</table></div><h2>现场调查的基本步骤</h2><p class="muted small">模拟中的四个阶段，对应下面这些步骤。实际工作中，控制措施从第一步起就要同步进行，不必等到查明原因。</p>
+  <ol class="ten"><li>组织准备：组建调查组，备齐采样和防护物资</li><li>核实诊断：查看病人、了解临床表现和检验结果</li><li>确定暴发或流行的存在</li><li>建立病例定义，开展病例搜索</li><li>描述三间分布：时间、地区、人群</li><li>建立假设：可能的致病因素和暴露途径</li><li>验证假设：分析性研究和实验室检测</li><li>采取控制措施，并评价效果</li><li>完善现场调查</li><li>撰写调查报告，按程序报告</li></ol>`;
+  main.innerHTML=h;scrollTop();
+}
+
+/* ---------- 案件 ---------- */
+function openCase(id){
+  cur=id;const c=byId(id);
+  if(!states[id])states[id]=newState(c);
+  buildNav();closeNav();
+  const st=states[id],col=CATS[c.cat].color;
+  main.style.setProperty('--c',col);
+  main.innerHTML=`<div class="dossier-head"><div><span class="cat-tag cat-${c.cat}">${c.type}</span><h1>${c.title}</h1></div><span class="status${st.finished?' closed':''}" id="status">${st.finished?'已结案':'调查进行中'}</span></div>
+  <dl class="facts"><div><dt>地点</dt><dd>${c.loc}</dd></div><div><dt>时间</dt><dd>${c.time}</dd></div><div><dt>事件类别</dt><dd>${CATS[c.cat].name}</dd></div><div><dt>难度</dt><dd>${c.level}</dd></div></dl>
+  <ol class="stepper" id="stepper"></ol><div id="phase"></div>`;
+  goPhase(st.phase);
+}
+function drawStepper(){
+  const st=states[cur];
+  $('#stepper').innerHTML=STEPS.map((s,i)=>{const n=i+1;const cls=n===st.phase?'now':(n<st.max||(n===st.max&&st.finished)||n<st.phase?'done':'');return `<li><button class="${cls}" data-step="${n}" ${n>st.max?'disabled':''}><b>${s}</b></button></li>`}).join('');
+  $('#stepper').onclick=e=>{const b=e.target.closest('[data-step]');if(b&&!b.disabled)goPhase(+b.dataset.step)};
+}
+function goPhase(n){
+  const st=states[cur];st.phase=n;st.max=Math.max(st.max,n);
+  drawStepper();
+  const c=byId(cur),box=$('#phase');
+  box.innerHTML=`<div class="phase">${[p1,p2,p3,p4][n-1](c,st)}</div>`;
+  wire(n,c,st);scrollTop();
+}
+
+/* ---------- 第一步 ---------- */
+function p1(c,st){
+  return `<h2>接报与初步研判</h2>
+  <div class="sec"><h3>接报记录</h3><div class="log">${c.report.map(r=>`<div class="log-row"><div class="log-t">${r.t}</div><div><div class="log-src">${r.src}</div><div class="log-text">"${r.text}"</div></div></div>`).join('')}</div></div>
+  <div class="sec"><h3>现场情况</h3><div class="story">${c.scene}</div></div>
+  <div class="sec"><h3>病例速写<small>${c.patients.length}例代表性病例</small></h3><div class="pts">${c.patients.map(p=>`<div class="pt"><b>${p.name}</b><p>${p.desc}</p><dl>${p.vitals.map(v=>`<dt>${v[0]}</dt><dd>${v[1]}</dd>`).join('')}</dl></div>`).join('')}</div></div>
+  <div class="sec"><h3>首要处置决策</h3>${decision(c.q1,st.q1,'q1')}<div class="judge note lab" id="judge" ${st.q1.ok?'':'hidden'}><p><b>初步研判：</b>${c.judge}</p></div></div>
+  <div class="next-row"><button class="btn" id="next" ${st.q1.ok?'':'disabled'}>进入流行病学调查</button></div>`;
+}
+function decision(q,s,key){
+  return `<div class="decision" data-dec="${key}"><div class="q-stem">${q.q}</div>${q.o.map((o,i)=>`<button class="opt" data-i="${i}" ${s.ok?'disabled':''}><span class="k">${'ABCD'[i]}</span><span>${o.t}</span></button>`).join('')}<div class="fb-box"></div>${s.ok?`<div class="fb ok">${q.o.find(o=>o.ok).fb}</div>`:''}</div>`;
+}
+function wireDecision(q,s,onOk){
+  document.querySelectorAll('[data-dec]').forEach(d=>{
+    const qq=d.dataset.dec==='q1'?byId(cur).q1:byId(cur).q2,ss=states[cur][d.dataset.dec];
+    if(ss.ok)d.querySelectorAll('.opt').forEach((b,i)=>{if(qq.o[i].ok)b.classList.add('right')});
+    d.onclick=e=>{
+      const b=e.target.closest('.opt');if(!b||b.disabled)return;
+      const o=qq.o[+b.dataset.i];ss.tries++;
+      const fb=d.querySelector('.fb-box');
+      if(o.ok){ss.ok=true;b.classList.add('right');d.querySelectorAll('.opt').forEach(x=>x.disabled=true);fb.innerHTML=`<div class="fb ok">${o.fb}</div>`;onOk&&onOk(d.dataset.dec);}
+      else{b.classList.add('wrong');b.disabled=true;fb.innerHTML=`<div class="fb no">${o.fb}<br><span class="small">请重新选择。</span></div>`;}
+    };
+  });
+}
+
+/* ---------- 第二步 ---------- */
+function p2(c,st){
+  let h=`<h2>流行病学调查</h2><div class="sec"><h3>病例定义</h3><div class="note"><p>${c.def}</p></div></div>
+  <div class="sec"><h3>${c.curve?'时间分布：流行曲线':'时间分布：事件经过'}</h3>`;
+  if(c.curve)h+=`<div class="chart">${curveSVG(c.curve,CATS[c.cat].color)}</div>`;
+  else h+=`<ol class="tl">${c.timeline.map(t=>`<li><b>${t[0]}</b><span>${t[1]}</span></li>`).join('')}</ol>`;
+  h+=revealBlock('从时间分布中你能得出什么判断？想好后查看解读',c.timeNote)+`</div>
+  <div class="sec"><h3>地区分布与暴露分析</h3><div>${c.place.startsWith('<')?c.place:`<p>${c.place}</p>`}</div>`;
+  c.ar.forEach((t,i)=>{h+=arTable(t,i,st.arShown[i])});
+  h+=`</div><div class="sec"><h3>人群分布</h3><p>${c.person}</p></div>
+  <div class="sec"><h3>锁定致病因素</h3><p>综合临床表现和三间分布，你认为最可能的致病因素是哪一个？</p><div class="sus-grid">${st.susOrder.map(i=>{const s=c.suspects[i];const cls=st.sus.ok&&s.ok?'ok':st.sus.wrong.includes(i)?'no':'';return `<button class="sus ${cls}" data-s="${i}" ${cls||st.sus.ok?'disabled':''}>${s.n}</button>`}).join('')}</div>
+  <div class="sus-log" id="sus-log">${susLog(c,st)}</div></div>
+  <div class="next-row"><button class="btn" id="next" ${st.sus.ok?'':'disabled'}>锁定目标，进入采样检验</button></div>`;
+  return h;
+}
+function susLog(c,st){
+  let h=st.sus.wrong.map(i=>`<p style="background:var(--alert-bg)"><b>排除 ${c.suspects[i].n}：</b>${c.suspects[i].why}</p>`).join('');
+  if(st.sus.ok){const s=c.suspects.find(x=>x.ok);h+=`<p style="background:var(--ok-bg)"><b>锁定 ${s.n}：</b>${s.why}</p>`;}
+  return h;
+}
+function revealBlock(label,body){
+  return `<div class="reveal"><button class="btn ghost small" data-reveal>${label}</button><div class="reveal-body note" hidden>${body.startsWith('<')?body:`<p>${body}</p>`}</div></div>`;
+}
+function arTable(t,i,shown){
+  const g=t.groups,ref=g[g.length-1],refAR=ref.cases/ref.total;
+  const rows=g.map((r,k)=>{const ar=r.cases/r.total;let rr='参照组';if(k<g.length-1)rr=refAR===0?'参照组无病例':(ar/refAR).toFixed(1);
+    return `<tr><td>${r.label}</td><td class="num">${r.total}</td><td class="num">${r.cases}</td><td class="num ${shown?'':'hide'}">${pct(ar)}</td><td class="num ${shown?'':'hide'} ${k<g.length-1&&refAR&&ar/refAR>=2?'rr-big':''}">${rr}</td></tr>`}).join('');
+  let concl='';
+  if(shown){const a=g[0],ar=a.cases/a.total;concl=refAR===0?`暴露组罹患率${pct(ar)}，非暴露组无一发病，提示暴露与发病高度关联。`:(()=>{const rr=ar/refAR;return rr>=2?`RR = ${rr.toFixed(1)}：${a.label}者发病风险是参照组的${rr.toFixed(1)}倍，暴露与发病存在强关联。`:`RR = ${rr.toFixed(1)}，接近1：两组发病风险几乎相同，该因素与发病无关，可以排除。`})();}
+  return `<div class="tbl-wrap ar"><table><caption>${t.title}</caption><tr><th>分组</th><th class="num">人数</th><th class="num">发病数</th><th class="num">罹患率</th><th class="num">相对危险度（RR）</th></tr>${rows}</table></div>
+  ${shown?`<p class="small"><b>${concl}</b></p>`:`<button class="btn ghost small" data-ar="${i}">计算罹患率与相对危险度</button><p class="muted small" style="margin-top:6px">先自己算一算：罹患率＝发病数÷人数；RR＝暴露组罹患率÷参照组罹患率。</p>`}`;
+}
+function curveSVG(cv,color){
+  const W=760,H=290,L=46,R=14,T=40,B=62,n=cv.counts.length,max=Math.max(...cv.counts,1);
+  const step=max<=5?1:max<=12?2:max<=30?5:10,ymax=Math.ceil(max/step)*step,cw=(W-L-R)/n,ph=H-T-B;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="流行曲线" style="font-family:inherit">`;
+  for(let y=0;y<=ymax;y+=step){const yy=H-B-(y/ymax)*ph;s+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="#EEF1F2"/><text x="${L-8}" y="${yy+4}" text-anchor="end" font-size="12" fill="#7A8794">${y}</text>`;}
+  cv.counts.forEach((v,i)=>{const h=(v/ymax)*ph,x=L+i*cw+cw*.1,w=cw*.8,y=H-B-h;
+    s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${color}" rx="1.5"/>`;
+    if(v)s+=`<text x="${x+w/2}" y="${y-5}" text-anchor="middle" font-size="12" font-weight="600" fill="#1B2631">${v}</text>`;
+    s+=`<text x="${L+i*cw+cw/2}" y="${H-B+18}" text-anchor="middle" font-size="12" fill="#4B5966">${cv.labels[i]}</text>`;});
+  s+=`<line x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}" stroke="#7A8794"/>`;
+  if(cv.mark){const x=L+cv.mark.i*cw;s+=`<line x1="${x}" x2="${x}" y1="${T-16}" y2="${H-B}" stroke="#B42318" stroke-dasharray="4 3" stroke-width="1.5"/><text x="${x+6}" y="${T-6}" font-size="12.5" fill="#B42318" font-weight="600">${cv.mark.label}</text>`;}
+  s+=`<text x="${(L+W-R)/2}" y="${H-12}" text-anchor="middle" font-size="12.5" fill="#4B5966">${cv.x}</text><text transform="translate(14 ${T+ph/2}) rotate(-90)" text-anchor="middle" font-size="12.5" fill="#4B5966">病例数</text></svg>`;
+  return s;
+}
+
+/* ---------- 第三步 ---------- */
+function p3(c,st){
+  const sd=st.samp.done;
+  let h=`<h2>采样与实验室检验</h2><p>根据你锁定的致病因素，勾选本次调查应当采集的样本，然后提交采样方案。好的采样方案既不遗漏关键样本，也不浪费资源去做无关检测，还要记得设置对照。</p>
+  <div class="samples">${st.order.map(i=>{const s=c.samples[i],ck=st.samp.checked.includes(i);let badge='';
+    if(sd){badge=ck&&s.need?'<span class="badge ok">应采，已选</span>':!ck&&s.need?'<span class="badge miss">遗漏</span>':ck&&!s.need?'<span class="badge extra">非必要</span>':'<span class="badge skip">正确排除</span>';}
+    return `<label class="smp"><input type="checkbox" data-smp="${i}" ${ck?'checked':''} ${sd?'disabled':''}><span>${s.n}</span>${badge}${sd?`<span class="why">${s.why}</span>`:''}</label>`}).join('')}</div>`;
+  if(!sd)h+=`<div class="next-row"><button class="btn" id="submit-smp">提交采样方案</button></div>`;
+  else{
+    h+=`<p class="small" style="margin-top:10px"><b>采样方案评估：</b>${st.samp.score}/${c.samples.length} 项判断正确。${st.samp.score===c.samples.length?'方案完整、精准。':'请对照上面的说明，看看遗漏或多余的是哪几项。'}</p>
+    <div class="lab-report"><header><b>检验检测结果报告</b><span>${c.loc.replace(/（.*?）/,'')}</span></header><div class="tbl-wrap">${c.results}</div></div>
+    <div class="sec"><h3>证据链解读</h3><div class="note lab"><p>${c.resultNote}</p></div></div>
+    <div class="next-row"><button class="btn" id="next">确定结论，制定控制措施</button></div>`;
+  }
+  return h;
+}
+
+/* ---------- 第四步 ---------- */
+function p4(c,st){
+  let h=`<h2>结论与控制措施</h2><div class="conclusion"><b>调查结论</b>${c.conclusion}</div>`;
+  if(c.q2)h+=`<div class="sec"><h3>处置决策</h3>${decision(c.q2,st.q2,'q2')}</div>`;
+  h+=`<div class="sec"><h3>控制措施与处置流程</h3><div class="acts">${c.actions.map(a=>`<div class="act"><h4>${a[0]}</h4><ul>${a[1].map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('')}</div></div>
+  <div class="sec"><h3>风险沟通范本</h3><div class="notice"><h4>${c.notice.title}</h4><div>${c.notice.body}</div><div class="sign">${c.notice.sign}</div></div></div>
+  <div class="sec"><h3>结案标准</h3><div class="note ok"><p>${c.end}</p></div></div>
+  <div class="sec"><h3>复盘要点</h3><ul>${c.review.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+  <div id="summary">${st.finished?summary(c,st):''}</div>
+  <div class="next-row" id="finish-row" ${st.finished?'hidden':''}><button class="btn" id="finish" ${c.q2&&!st.q2.ok?'disabled':''}>完成模拟，生成调查小结</button></div>`;
+  return h;
+}
+function summary(c,st){
+  const t=s=>s.tries<=1?'首次即答对':`第${s.tries}次答对`;
+  const idx=CASES.findIndex(x=>x.id===c.id),nx=CASES[idx+1];
+  return `<div class="sec"><h3>调查小结</h3><div class="score" style="grid-template-columns:repeat(4,1fr)">
+  <div><b>${t(st.q1)}</b><span>首要处置决策</span></div>
+  <div><b>${st.sus.wrong.length?`排除${st.sus.wrong.length}项后锁定`:'一次锁定'}</b><span>致病因素判断</span></div>
+  <div><b>${st.samp.score}/${c.samples.length}</b><span>采样方案正确项</span></div>
+  <div><b>${c.q2?t(st.q2):'—'}</b><span>处置决策</span></div></div>
+  <div class="next-row"><button class="btn ghost" id="restart">重新模拟本案</button><button class="btn ghost" data-home>返回案件登记簿</button>${nx?`<button class="btn" data-case="${nx.id}">下一个案件：${nx.title}</button>`:''}</div></div>`;
+}
+
+/* ---------- 交互绑定 ---------- */
+function wire(n,c,st){
+  $('#phase').onclick=null;
+  const next=$('#next');
+  if(next)next.onclick=()=>goPhase(n+1);
+  if(n===1)wireDecision(c.q1,st.q1,()=>{$('#judge').hidden=false;$('#next').disabled=false;});
+  if(n===2){
+    $('#phase').onclick=e=>{
+      const r=e.target.closest('[data-reveal]');if(r){const b=r.nextElementSibling;b.hidden=!b.hidden;return;}
+      const a=e.target.closest('[data-ar]');if(a){st.arShown[a.dataset.ar]=true;const keep=window.innerWidth>900?$('#main').scrollTop:window.scrollY;goPhaseKeep(2,keep);return;}
+      const s=e.target.closest('[data-s]');if(s&&!s.disabled){const i=+s.dataset.s;st.sus.tries++;
+        if(c.suspects[i].ok){st.sus.ok=true;document.querySelectorAll('.sus').forEach(b=>b.disabled=true);s.classList.add('ok');$('#next').disabled=false;}
+        else{st.sus.wrong.push(i);s.classList.add('no');s.disabled=true;}
+        $('#sus-log').innerHTML=susLog(c,st);}
+    };
+  }
+  if(n===3){
+    document.querySelectorAll('[data-smp]').forEach(cb=>cb.onchange=()=>{const i=+cb.dataset.smp;cb.checked?st.samp.checked.push(i):st.samp.checked=st.samp.checked.filter(x=>x!==i);});
+    const sb=$('#submit-smp');if(sb)sb.onclick=()=>{st.samp.done=true;st.samp.score=c.samples.filter((s,i)=>s.need===st.samp.checked.includes(i)).length;goPhaseKeep(3,null);};
+  }
+  if(n===4){
+    if(c.q2)wireDecision(c.q2,st.q2,()=>{$('#finish').disabled=false;});
+    const f=$('#finish');if(f)f.onclick=()=>{st.finished=true;done.add(c.id);saveDone();$('#summary').innerHTML=summary(c,st);$('#finish-row').hidden=true;$('#status').textContent='已结案';$('#status').classList.add('closed');buildNav();drawStepper();bindRestart();$('#summary').scrollIntoView({behavior:'smooth'});};
+    bindRestart();
+  }
+}
+function bindRestart(){const r=$('#restart');if(r)r.onclick=()=>{states[cur]=newState(byId(cur));openCase(cur);};}
+function goPhaseKeep(n,keep){
+  const st=states[cur];const c=byId(cur);
+  $('#phase').innerHTML=`<div class="phase" style="animation:none">${[p1,p2,p3,p4][n-1](c,st)}</div>`;wire(n,c,st);
+  if(keep!=null){if(window.innerWidth>900)$('#main').scrollTop=keep;else window.scrollTo(0,keep);}
+}
+function scrollTop(){if(window.innerWidth>900)$('#main').scrollTop=0;else window.scrollTo(0,0);}
+function closeNav(){document.body.classList.remove('nav-open');}
+
+buildNav();
+$('#menu-btn').onclick=()=>document.body.classList.toggle('nav-open');
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNav()});
+renderWelcome();
+})();
+
+</script>
+</body>
+</html>
